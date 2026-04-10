@@ -1,42 +1,41 @@
 require("dotenv").config();
 const http = require("http");
 
-const connectDB = require("./Config/db");
-const { initSocket } = require("./Config/socket");
-
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION! Shutting down...");
-  console.error(err.name, err.message);
+  console.error(err.name, err);
   process.exit(1);
 });
 
 const app = require("./app");
-
-const port = process.env.PORT || 8000;
+const { initDB } = require("./config/db");
+const { initSocket } = require("./config/socket");
 
 let httpServer;
+const port = process.env.PORT || 8000;
 
-const setServer = async () => {
+const startServer = () => {
   try {
-    await connectDB();
-    
+    initDB();
+
     httpServer = http.createServer(app);
 
     initSocket(httpServer);
 
     httpServer.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
+      console.log(`Server is listening on port ${port}`);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.log("Failed to create server:", error);
     process.exit(1);
   }
 };
-setServer();
+
+startServer();
 
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION! Shutting down...");
-  console.error(err.name, err.message);
+  console.error(err.name, err);
   httpServer.close(() => process.exit(1));
 });
 

@@ -104,6 +104,7 @@
 /* Messsages UI  */
 /* Messsages UI  */
 /* Messsages UI  */
+.messages,
 .messages-send,
 .messages-receive {
   height: fit-content;
@@ -114,19 +115,17 @@
   padding: 0;
   margin: 0;
 }
-.messages-send {
-  /* justify-content: end; */
+/* .messages-send {
   align-items: end;
 }
 .messages-receive {
-  /* justify-content: start; */
   align-items: start;
-}
+} */
 .messages-media-list {
   box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  margin: 0 1rem;
+  margin-left: 1rem;
   background-color: #eee;
   gap: 0.2rem;
   border-radius: 10px;
@@ -147,8 +146,15 @@
 .messages-send-container {
   display: flex;
   align-items: end;
+  width: 100%;
   /* background-color: red; */
   justify-content: end;
+}
+.messages-receive-container {
+  display: flex;
+  align-items: end;
+  width: 100%;
+  /* background-color: red; */
 }
 
 /* Error  */
@@ -191,7 +197,7 @@
   font-size: 0.9rem;
   text-align: center;
 }
-.loading-margin{
+.loading-margin {
   height: 100vh;
 }
 

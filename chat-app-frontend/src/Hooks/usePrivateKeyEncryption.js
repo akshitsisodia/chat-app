@@ -4,7 +4,7 @@ async function deriveKey(password, salt) {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
     enc.encode(password),
-    { name: "PBKDF2" },
+    { name: "PBKDF2" }, //PBKDF2 → Password Based Key Derivation Fuction 2 (turns a password into a strong key)
     false,
     ["deriveKey"],
   );

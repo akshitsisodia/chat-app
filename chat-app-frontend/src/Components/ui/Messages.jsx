@@ -5,7 +5,7 @@ import { useAuth } from '../../Context/AuthContext'
 import { useEffect, useRef, useState } from "react"
 import { FaXmark } from "react-icons/fa6"
 import { FaCheckDouble } from "react-icons/fa"
-import FilePreview from "./FilePreview"
+import FilesList from "../common/FilesList"
 
 
 function Messages({ id, receiver, content, messages }) {
@@ -25,55 +25,24 @@ function Messages({ id, receiver, content, messages }) {
 
     return (
         <>
-
             <div ref={bottomRef} />
-
             {messages.length > 0 && messages.map((curr, i) => {
-                if (curr?.sender === me?._id) {
 
-                    return (
-                        <div key={curr._id} className="messages-send">
-                            {/* load file  */}
-                            <ul className="messages-media-list">
-                                {curr?.files?.length > 0 &&
-                                    curr?.files.map((obj, i) => {
-                                        return (
-                                            <li className="pdf-container" key={i}>
-                                                < FilePreview file={obj} senderPublicKey={receiver.publicKey} imageButtonClicked={imageButtonClicked} />
-                                            </li>
-                                        )
-                                    })
-                                }
-                            </ul>
+                return (
+                    <div key={curr.id} className="messages">
+                        <div className={curr.sender_id === me.id ? "messages-send-container" : "messages-receive-container"}>
+                            {/* load files  */}
+                            {curr?.files?.length > 0 && <FilesList data={curr.files} public_key={receiver.public_key} imageButtonClicked={imageButtonClicked} />}
                             {/* load message  */}
-                            {curr.content && <div className="messages-send-container">
-                                < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} />
-                                <FaCheckDouble className="not-seen" color={curr.seen ? "#00d0ff" : ""} />
-                            </div>}
-                        </div >
-                    )
-                }
-                else {
-                    return (<div key={curr._id} className="messages-receive" >
-                        {/* load media receiver */}
-                        <ul className="messages-media-list">
-                            {curr?.files?.length > 0 &&
-                                curr?.files.map((obj, i) => {
-                                    return (
-                                        <li className="pdf-container" key={i}>
-                                            < FilePreview file={obj} senderPublicKey={receiver.publicKey} imageButtonClicked={imageButtonClicked} />
-                                        </li>
-                                    )
-                                })
-                            }
-                        </ul>
-                        {/* load message receiver  */}
-                        {curr.content &&
-                            <ReceiveMessageCard sender={receiver} nonce={curr?.nonce} message={curr?.content} />
-                        }
-                    </div>
-                    )
-                }
+                            {curr.content && <>
+                                {curr.sender_id === me.id ? < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} /> : <ReceiveMessageCard sender={receiver} nonce={curr?.nonce} message={curr?.content} />}
+                            </>}
+                            {curr.sender_id === me.id && <FaCheckDouble className="not-seen" color={curr.seen ? "#00d0ff" : ""} />}
+
+                        </div>
+                    </div >
+                )
+
             })}
 
             {/* open image model */}

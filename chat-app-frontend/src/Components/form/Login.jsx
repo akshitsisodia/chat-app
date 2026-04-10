@@ -6,10 +6,9 @@ function Login() {
   const [password, setPassword] = useState('')
   const [open, setOpen] = useState(false)
 
-  const useLoginMutation = getLoginMutation({ password, setPassword });
+  const useLoginMutation = getLoginMutation({ password, setPassword, setEmail });
 
   if (useLoginMutation?.error) console.log(useLoginMutation?.failureReason?.response?.data?.message)
-
 
 
 
@@ -19,7 +18,6 @@ function Login() {
       email,
       password
     })
-    setEmail("")
   }
 
   return (

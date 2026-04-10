@@ -8,9 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { getPrivateMessage } from "../../Services/MessageAPI";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { getSocket } from "../../Lib/socket";
-import ProfileUserDetails from "../common/ProfileUserDetails";
 
-function Chat({ id, receiver, chatId }) {
+function Chat({ id }) {
     const queryClient = useQueryClient();
     const socket = getSocket();
 
@@ -19,7 +18,7 @@ function Chat({ id, receiver, chatId }) {
 
     const chatRef = useRef();
 
-
+    const LIMIT = 20;
 
     const {
         data,
@@ -28,28 +27,40 @@ function Chat({ id, receiver, chatId }) {
         isFetchingNextPage,
     } = useInfiniteQuery({
         queryKey: ["messages", id],
-        queryFn: ({ pageParam = 20, signal }) =>
-            getPrivateMessage({ id: chatId, limit: pageParam, signal }),
+
+        queryFn: ({ pageParam = 0, signal }) =>
+            getPrivateMessage({
+                receiverId: id,
+                offset: pageParam,
+                limit: LIMIT,
+                signal
+            }),
 
         getNextPageParam: (lastPage, pages) => {
-            const totalLoaded =
-                pages.flatMap(p => p.data)
-                    .filter((msg, index, self) =>
-                        index === self.findIndex((m) => m._id === msg._id)
-                    ).length;
+            const totalLoaded = pages.reduce(
+                (acc, page) => acc + page.data.length,
+                0
+            );
 
 
             return totalLoaded < lastPage.count
-                ? totalLoaded + 20
+                ? totalLoaded
                 : undefined;
         },
     });
 
+    // const messages =
+    //     data?.pages.flatMap(page => page.data) ?? [];
+
     const messages = data?.pages
-        .flatMap((page) => page.data)
+        .flatMap(page => page.data)
         .filter((msg, index, self) =>
-            index === self.findIndex((m) => m._id === msg._id)
+            index === self.findIndex(m => m.id === msg.id)
         ) ?? [];
+
+    const receiver = data?.pages
+        .flatMap((page) => page.receiver)[0]
+        ?? {}
 
     const messageScrollHandler = (e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -63,33 +74,6 @@ function Chat({ id, receiver, chatId }) {
             }, 400)
         }
     }
-
-    useEffect(() => {
-        const handler = (message) => {
-            socket.emit("seenMessage", { chatId, receiverId: id })
-
-            queryClient.setQueryData(["messages", id], (oldData) => {
-                if (!oldData) return oldData;
-
-                return {
-                    ...oldData,
-                    pages: oldData.pages.map((page, index) => {
-                        if (index === 0) {
-                            return {
-                                ...page,
-                                data: [message, ...page.data],
-                            };
-                        }
-                        return page;
-                    }),
-                };
-            })
-
-        }
-        socket?.on("newMessage", handler)
-
-        return () => socket.off("newMessage", handler)
-    }, [queryClient, id])
 
 
     useEffect(() => {
@@ -142,7 +126,7 @@ function Chat({ id, receiver, chatId }) {
             </div>
 
             {/* input  */}
-            <SendMessageForm receiver={receiver} id={id} chatId={chatId} content={content} setContent={setContent} />
+            <SendMessageForm receiver={receiver} id={id} content={content} setContent={setContent} />
         </div>
     )
 }

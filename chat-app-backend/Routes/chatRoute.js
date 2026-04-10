@@ -1,13 +1,13 @@
 const express = require("express");
-const { protect } = require("../Middlewares/authMiddleware");
+const { protect } = require("../middlewares/authMiddleware");
 const {
   getOrCreateChat,
-  getPreviousChats,
-} = require("../Controllers/chatController");
+  getUserChats,
+} = require("../controllers/chatController");
 
 const router = express.Router();
 
-router.get("/", protect, getPreviousChats);
-router.post("/get-or-create", protect, getOrCreateChat);
+router.get("/get-or-create/:receiverId", protect, getOrCreateChat);
+router.get("/prev-chats", protect, getUserChats);
 
 module.exports = router;

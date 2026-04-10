@@ -1,7 +1,7 @@
 import '../Styles/Auth.css'
 
-import { NavLink } from 'react-router-dom'
-import { useState } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { FaApple } from 'react-icons/fa'
 
 import Login from '../Components/form/Login'
@@ -9,14 +9,22 @@ import Register from '../Components/form/Register'
 
 import authDecoration from '../assets/authDecorationGif.gif'
 import googleLogo from '../assets/icon-google.png'
+import { useAuth } from '../Context/AuthContext'
 
 
 function Auth() {
+    const { me } = useAuth()
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (me) {
+            navigate("/");
+        }
+    }, [me]);
+
     const [open, setOpen] = useState(false)
     const [isNext, setNext] = useState(false)
     const [isContinue, setContinue] = useState(false)
-
-
 
     const signClickedHandler = () => {
         document.getElementById("auth-fill").style.transform = "translateX(135px)"

@@ -1,14 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   loginUser,
+  logoutUser,
   registerUser,
   setOtp,
   verifyUser,
 } from "../Services/authAPI";
 import { useAuth } from "../Context/AuthContext";
 import { decryptPrivateKey } from "./usePrivateKeyEncryption";
+import { getSocket } from "../Lib/socket";
 
-export const getLoginMutation = ({ password, setPassword }) => {
+export const getLoginMutation = ({ password, setPassword, setEmail }) => {
   const { login } = useAuth();
 
   return useMutation({
@@ -16,7 +18,7 @@ export const getLoginMutation = ({ password, setPassword }) => {
     onSuccess: async (data) => {
       const user = data.data.data;
       const privateKey = await decryptPrivateKey(
-        user.encryptedPrivateKey,
+        user.encrypted_private_key,
         password,
         user.salt,
         user.iv,
@@ -25,8 +27,12 @@ export const getLoginMutation = ({ password, setPassword }) => {
       // store locally
       localStorage.setItem("privateKey", privateKey);
       setPassword("");
+      setEmail("");
       login();
     },
+    onError: (error) => {
+      setPassword("");
+      },
   });
 };
 
@@ -34,7 +40,7 @@ export const getOtpMutation = ({ setNext, setName, setEmail }) => {
   return useMutation({
     mutationFn: setOtp,
     onSuccess: (data) => {
-      localStorage.setItem("verificationId", data?.data);
+      localStorage.setItem("verificationEmail", data?.data);
       setNext(true);
       setName("");
       setEmail("");
@@ -46,18 +52,13 @@ export const getVerifyMutation = ({ setContinue, setMessage }) => {
   return useMutation({
     mutationFn: verifyUser,
     onSuccess: (data) => {
-      localStorage.clear();
-      localStorage.setItem("userId", data.data);
       setContinue(true);
       setMessage("");
     },
   });
 };
 
-export const getRegisterMutation = ({
-  setPassword,
-  setConPassword,
-}) => {
+export const getRegisterMutation = ({ setPassword, setConPassword }) => {
   const { login } = useAuth();
   return useMutation({
     mutationFn: registerUser,
@@ -65,6 +66,22 @@ export const getRegisterMutation = ({
       setPassword("");
       setConPassword("");
       login();
+    },
+  });
+};
+
+export const getLogoutMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: logoutUser,
+    onSuccess: async () => {
+      getSocket().disconnect();
+
+      queryClient.setQueryData(["me"], null);
+      queryClient.removeQueries(["me"]);
+
+      localStorage.clear();
+      navigate("/auth");
     },
   });
 };

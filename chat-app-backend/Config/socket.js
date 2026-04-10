@@ -1,16 +1,14 @@
 const { Server } = require("socket.io");
-const CustomError = require("../Utils/CustomError");
+const CustomError = require("../utils/CustomError");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
-const User = require("../Models/User");
-const mongoose = require("mongoose");
-const asyncErrorHandler = require("../Utils/asyncErrorHandler");
-const PrivateMessage = require("../Models/PrivateMessage");
-const Chat = require("../Models/Chat");
+
 const {
   sendMessageHandler,
   seenMessageHandler,
-} = require("../Controllers/socketController");
+} = require("../controllers/socketController");
+const UserModel = require("../models/user.model");
+
 let io;
 
 const initSocket = (server) => {
@@ -34,7 +32,7 @@ const initSocket = (server) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      const user = await User.findById(decoded.id).select("-password");
+      const user = await UserModel.findById(decoded.id);
 
       if (!user) {
         return next(new CustomError("User not found!", 404));
@@ -48,8 +46,8 @@ const initSocket = (server) => {
   });
 
   io.on("connection", (socket) => {
-    socket.join(socket?.user?._id.toString());
-    console.log(`${socket?.user?.name} Connected`,socket.id);
+    socket.join(socket.user.id);
+    console.log(`${socket.user.name} Connected`, socket.id);
 
     socket.on("joinChat", async (chatId) => {
       socket.join(chatId);
@@ -61,7 +59,7 @@ const initSocket = (server) => {
     socket.on("seenMessage", seenMessageHandler(socket, io));
 
     socket.on("disconnect", () => {
-      console.log(`${socket?.user?.name} disconnected:`,socket.id);
+      console.log(`${socket?.user?.name} disconnected:`, socket.id);
     });
   });
 

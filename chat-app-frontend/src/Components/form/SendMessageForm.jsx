@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPause, FaPlus, FaVideo } from "react-icons/fa";
 import { useUploadMutation } from "../../Hooks/useMutation";
 import { getSocket } from "../../Lib/socket";
-import { decryptMessage, encryptMessage } from "../../Hooks/useEncryptMessage";
+import { encryptMessage } from "../../Hooks/useEncryptMessage";
 import { useAuth } from "../../Context/AuthContext";
 
 
 
-function SendMessageForm({ id, receiver, chatId, content, setContent }) {
+function SendMessageForm({ id, receiver, content, setContent }) {
     const { me } = useAuth();
     const socket = getSocket()
     const [openFiles, setOpenFiles] = useState(false);
@@ -33,6 +33,7 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
 
     //!recording Logic
     const startRecording = async () => {
+        //startRecording, streamRef, mediaRecorderRef, chunksRef, setAudioFile, setAudioUrl, setIsRecording
         try {
             setStartRecord(true)
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -70,12 +71,14 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
     };
 
     const stopRecording = () => {
+        // mediaRecorderRef, setIsRecording
         if (!mediaRecorderRef.current) return;
         mediaRecorderRef.current.stop();
         setIsRecording(false);
     };
 
     const sendRecording = async () => {
+        // audioFile, isRecording, receiver
         if (!audioFile) return;
         if (isRecording) stopRecording();
 
@@ -106,7 +109,7 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
 
         // Encrypt AES key (NaCl)
         const nonce = nacl.randomBytes(nacl.box.nonceLength);
-        const receiverPublicKey = receiver?.publicKey;
+        const receiverPublicKey = receiver?.public_key;
         const senderPrivateKey = localStorage.getItem("privateKey");
 
         const encryptedKey = nacl.box(
@@ -123,7 +126,7 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
         formData.append("types", audioFile.type);
         formData.append("names", audioFile.name);
 
-        uploadMutation.mutate({ id: chatId, files: formData });
+        uploadMutation.mutate({ id, files: formData });
         setAudioUrl("")
         setStartRecord(false)
     };
@@ -132,45 +135,43 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
 
     const onContentChangeHandler = (e) => {
         setContent(e.target.value);
-
     }
 
     const fileInputHandler = async (e) => {
+        //  generate AES key + IV
+        const aesKey = crypto.getRandomValues(new Uint8Array(32));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+
+        // Encrypt file (AES)
+        const cryptoKey = await crypto.subtle.importKey(
+            "raw",
+            aesKey,
+            "AES-GCM",  //AES-GCM → Advanced Encryption Standard – Galois/Counter Mode (uses a key to protect data)
+            false,
+            ["encrypt"]
+        );
+
         const files = e.target.files;
         const formData = new FormData();
 
-        // for (let i = 0; i < files.length; i++) {
-        //     formData.append("files", files[i]); // same key "file"
-        // }
 
         for (let file of files) {
+            //convert into raw bytes
             const buffer = await file.arrayBuffer();
 
-            // AES key + IV
-            const aesKey = crypto.getRandomValues(new Uint8Array(32));
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-
-            // Encrypt file (AES)
-            const cryptoKey = await crypto.subtle.importKey(
-                "raw",
-                aesKey,
-                "AES-GCM",
-                false,
-                ["encrypt"]
-            );
-
+            // encryption on those bytes
             const encryptedBuffer = await crypto.subtle.encrypt(
                 { name: "AES-GCM", iv },
                 cryptoKey,
                 buffer
             );
 
-            // Convert to blob
+            // Convert to blob for file like formate
             const encryptedBlob = new Blob([encryptedBuffer]);
 
             // Encrypt AES key (NaCl)
             const nonce = nacl.randomBytes(nacl.box.nonceLength);
-            const receiverPublicKey = receiver?.publicKey;
+            const receiverPublicKey = receiver.public_key;
             const senderPrivateKey = localStorage.getItem("privateKey");
 
             const encryptedKey = nacl.box(
@@ -228,26 +229,25 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
 
         if (files) {
             uploadMutation.mutate({
-                id: chatId,
+                id,
                 files
             })
-        } else {
-
-            const receiverPublicKey = receiver?.publicKey;
-            const { encrypted, nonce } = encryptMessage(content, localStorage.getItem("privateKey"), receiverPublicKey);
-
-            const data = {
-                chatId,
-                receiverId: id,
-                senderId: me?._id,
-                content: encrypted,
-                nonce,
-            }
-
-            socket.emit("sendMessage", data)
-
-            setContent("")
+            document.getElementById("preview").innerHTML = "";
+            return
         }
+
+        const { encrypted, nonce } = encryptMessage(content, localStorage.getItem("privateKey"), receiver?.public_key);
+
+        const data = {
+            receiverId: id,
+            content: encrypted,
+            nonce,
+        }
+
+        socket.emit("sendMessage", data)
+
+        setContent("")
+
         document.getElementById("preview").innerHTML = "";
     }
 
@@ -277,13 +277,12 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
             </div>
             <div id="preview-file">
             </div>
-            {audioUrl && <audio controls src={audioUrl}></audio>}
+            {audioUrl && <audio controls src={audioUrl} />}
 
             {/* sending logic  */}
             <div className="sendMessageForm-main" >
                 {!startRecord && <div className="sendMessageForm-inputs">
                     {openFiles && <div className="sendMessageForm-file-inputs">
-
                         {/* input 1 */}
                         <label htmlFor="file" className="sendMessageForm-file-input" onClick={() => document.getElementById('fileInput').click()}>
                             <FaPaperclip /> Document
@@ -300,23 +299,29 @@ function SendMessageForm({ id, receiver, chatId, content, setContent }) {
 
                     </div>}
                     <button type="button" className="sendMessageForm-files-button" onClick={() => setOpenFiles(prev => prev === false ? true : false)}><FaPlus color="#333" /></button>
-                    <textarea type="text" className="sendMessageForm-input" rows={1} value={content} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />
-                    <button className="sendMessageForm-audio-button" onClick={() => { setStartRecord(true); startRecording(); }}><FaMicrophone color="#333" /></button>
+                    <textarea type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setOpenFiles(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />
+                    <button className="sendMessageForm-audio-button" onClick={() => { setStartRecord(true); startRecording(); setOpenFiles(false); }}><FaMicrophone color="#333" /></button>
                 </div>}
                 {!startRecord && <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending}>
                     {!uploadMutation.isPending && <FaArrowRight color="#fff" />}
                     {uploadMutation.isPending && <div className="loader"></div>}
                 </button>}
 
-                {/* Audio  */}
-                {startRecord && <div className="sendMessageForm-recording-inputs">
-                    <button className="sendMessageForm-audio-button" onClick={stopRecording} disabled={!isRecording}><FaPause /></button>
-                    {isRecording && <div>Recording: {seconds}s</div>}
-                </div>}
-                {startRecord && <button type="button" onClick={sendRecording} className="sendMessageForm-send-button" disabled={uploadMutation.isPending && !audioFile}>
-                    {!uploadMutation.isPending && <FaArrowRight color="#fff" />}
-                    {uploadMutation.isPending && <div className="loader"></div>}
-                </button>}
+                {/* Audio  recorder*/}
+                {
+                    startRecord &&
+                    <>
+                        <div className="sendMessageForm-recording-inputs">
+                            <button className="sendMessageForm-audio-button" onClick={stopRecording} disabled={!isRecording}><FaPause /></button>
+                            {isRecording && <div>Recording: {seconds}s</div>}
+                        </div>
+                        <button type="button" onClick={sendRecording} className="sendMessageForm-send-button" disabled={uploadMutation.isPending && !audioFile}>
+                            {!uploadMutation.isPending && <FaArrowRight color="#fff" />}
+                            {uploadMutation.isPending && <div className="loader"></div>}
+                        </button>
+                    </>
+                }
+
             </div>
 
         </form>

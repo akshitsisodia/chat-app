@@ -4,6 +4,7 @@ import { getMe } from '../Services/userAPI'
 import { useNavigate } from 'react-router-dom'
 import { logoutUser } from '../Services/authAPI'
 import { connectSocket, getSocket } from '../Lib/socket'
+import { getLogoutMutation } from '../Hooks/useAuthMutation'
 
 const AuthContext = createContext()
 
@@ -14,34 +15,27 @@ export const AuthProvider = ({ children }) => {
     const { data, isLoading, error } = useQuery({
         queryKey: ["me"],
         queryFn: getMe,
-        retry: false
+        retry: false,
+        refetchOnWindowFocus: false
     })
 
+    const me = data?.data ?? undefined
 
-    const me = data?.user ?? undefined
 
     useEffect(() => {
         connectSocket();
-    }, [me])
-
-
-    const logoutMutation = useMutation({
-        mutationFn: logoutUser,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries(["me"])
-            localStorage.clear()
-            navigate("/auth")
-            connectSocket();
-        }
-    })
+    }, [])
 
     const login = async () => {
-        await queryClient.invalidateQueries(["me"])
+        await queryClient.refetchQueries({ queryKey: ["me"] })
+        connectSocket();
         navigate("/")
     }
+
+
+    const logoutMutation = getLogoutMutation();
     const logout = () => {
         logoutMutation.mutate()
-        getSocket().disconnect();
     }
 
     return (

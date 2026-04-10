@@ -34,7 +34,7 @@ function App() {
           <PrivateMessages />
         </ProtectedRoute>
       } />
-      
+
     </Routes>
   )
 }

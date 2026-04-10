@@ -1,89 +1,69 @@
-const mongoose = require("mongoose");
-const Chat = require("../Models/Chat");
-const PrivateMessage = require("../Models/PrivateMessage");
-const User = require("../Models/User");
-
-const updatePreviousChats = async (user, chatId) => {
-  const chatIdStr = chatId.toString();
-
-  user.previousChats = [
-    chatIdStr,
-    ...user.previousChats.filter((id) => id.toString() !== chatIdStr),
-  ];
-
-  await user.save();
-};
+const { pool } = require("../config/db");
+const ChatModel = require("../models/chat.model");
+const ChatMemberModel = require("../models/chatMember.model");
+const ChatUnreads = require("../models/chatUnread.model");
+const MessageModel = require("../models/message.model");
+const MessageSeenModel = require("../models/messageSeen.model");
+const UserModel = require("../models/user.model");
 
 exports.sendMessageHandler = (socket, io) => async (data) => {
   try {
-    const { content, chatId, receiverId, nonce } = data;
-    const senderId = socket.user._id.toString();
-    const sender = socket.user;
+    const { content, receiverId, nonce } = data;
+    const senderId = socket.user.id;
 
-    if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
+    if (!content || !receiverId || !nonce) {
+      return socket.emit("error", "All credentials required!");
+    }
+
+    if (!/^[0-9a-f-]{36}$/.test(receiverId)) {
+      return socket.emit("error", "Invalid ID format!");
+    }
+    if (senderId === receiverId) {
       return socket.emit("error", "Invalid receiver");
     }
-    const receiver = await User.findById(receiverId);
+
+    const receiver = await UserModel.findById(receiverId);
     if (!receiver) {
       return socket.emit("error", "User not found!");
     }
 
-
-    if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      return socket.emit("error", "Invalid chatId");
-    }
-    if (!content) {
-      return socket.emit("error", "Content required");
-    }
-
-    const chat = await Chat.findById(chatId);
-    if (!chat) {
-      return socket.emit("error", "Chat not found");
-    }
-    if (!chat.members.includes(socket.user._id)) {
-      return socket.emit("error", "Unauthorized");
+    //find chat // /todo get orCreate Chat
+    const chatId = await ChatMemberModel.findChatByMembers({
+      senderId,
+      receiverId,
+    });
+    if (!chatId) {
+      return socket.emit("error", "Chat not found!");
     }
 
     // add Message to db
-    const message = await PrivateMessage.create({
+    const message = await MessageModel.create({
       chatId,
-      sender: senderId,
-      receiver: receiverId,
+      senderId,
       content,
       nonce,
     });
 
-    // update prevChats list
-    await updatePreviousChats(sender, chatId);
-    await updatePreviousChats(receiver, chatId);
-
-    const unreads = await PrivateMessage.countDocuments({
+    //update unreads
+    const unread_count = await ChatUnreads.createOrupdateUnreads({
       chatId,
-      receiver: receiverId,
-      seen: false,
+      receiverId,
     });
 
+    // update chat
+    const chat = await ChatModel.updateChat(chatId);
+    if (chat.is_first_update) {
+      const updatedReceiverChat = await ChatMemberModel.findChat({
+        chatId,
+        userId: receiverId,
+      });
+      io.to(receiverId).emit("newChat", updatedReceiverChat);
+    }
 
-    //  update lastMessage in db
-    const updatedChat = await Chat.findByIdAndUpdate(
-      chatId,
-      {
-        unreads,
-        lastMessage: {
-          content: message.content,
-          nonce,
-          sender: message.sender,
-          createdAt: message.createdAt,
-        },
-        seen: false,
-      },
-      { returnDocument: "after" },
-    ).populate("members", "name email photo publicKey");
-    // .populate("lastMessage.sender", "name email photo publicKey");
-
-
-    io.to(chatId).emit("newMessage", message);
-    io.to([receiverId, senderId]).emit("updateChat", updatedChat);
+    io.to([chatId, receiverId, senderId]).emit("newMessage", {
+      ...message,
+      unread_count,
+    });
   } catch (error) {
     console.log(error);
     socket.emit("error", "Something went wrong");
@@ -93,25 +73,22 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
 exports.seenMessageHandler = (socket, io) => async (data) => {
   try {
     const { chatId, receiverId } = data;
-    const chat = await Chat.findById(chatId);
+    const senderId = socket.user.id;
+
+    const chat = await ChatModel.findById(chatId);
     if (!chat) {
-      return socket.emit("error", "Chat not found");
+      return socket.emit("error", "Chat not found!");
     }
-    const sender = socket.user;
 
-    const senderId = sender._id.toString();
+    // seen logic
+    await MessageSeenModel.markSeen({ chatId, senderId });
 
-    await PrivateMessage.updateMany(
-      {
-        chatId,
-        sender: receiverId,
-        receiver: senderId,
-        seen: false,
-      },
-      { $set: { seen: true } },
-    );
+    // last message update
+    await ChatUnreads.resetUnreads({ chatId, senderId });
 
-    socket.to(chatId).emit("updateSeen", "message seen");
+    socket
+      .to([chatId, senderId, receiverId])
+      .emit("updateSeen", "message seen");
   } catch (error) {
     console.log(error);
     socket.emit("error", "Something went wrong");

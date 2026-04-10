@@ -1,11 +1,11 @@
 const jwt = require("jsonwebtoken");
 
-const CustomError = require("../Utils/CustomError");
-const User = require("../Models/User");
+const CustomError = require("../utils/CustomError");
+const UserModel = require("../models/user.model");
 
 exports.protect = async (req, res, next) => {
   const token = req?.cookies?.token;
-    if (!token) {
+  if (!token) {
     return next(new CustomError("Not authenticated!", 401));
   }
 
@@ -16,7 +16,7 @@ exports.protect = async (req, res, next) => {
     return next(new CustomError("Invalid or expired token", 400));
   }
 
-  req.user = await User.findById(decoded.id).select("-password");
+  req.user = await UserModel.findById(decoded.id);
 
   if (!req.user) {
     return next(new CustomError("User not found!", 404));

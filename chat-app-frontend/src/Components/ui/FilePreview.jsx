@@ -13,8 +13,8 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
 
             const decrypted = await decryptFile({
                 fileUrl: file.url,
-                encryptedKey: file.encryptedKey,
-                nonce: file.nonce,
+                encryptedKey: file.encrypted_key,  //aesKey
+                nonce: file.file_nonce,
                 iv: file.iv,
                 senderPublicKey,
                 receiverPrivateKey: privateKey,
@@ -54,7 +54,7 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
 
     //     Audio
     if (file?.type?.startsWith("audio/")) {
-        return <audio src={url} controls />
+        return <audio src={url} controls style={{width:"250px", height:"40px"}}/>
     }
 
     // 📄 Other

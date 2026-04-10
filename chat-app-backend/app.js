@@ -1,31 +1,28 @@
 const express = require("express");
-const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const morgan = require("morgan");
+const cors = require("cors");
 const helmet = require("helmet");
 const hpp = require("hpp");
+const morgan = require("morgan");
 
-const authRoute = require("./Routes/authRoute");
-const userRoute = require("./Routes/userRoute");
-const chatRoute = require("./Routes/chatRoute");
-const messagesRoute = require("./Routes/messageRoute");
-const errorHandler = require("./Middlewares/errorMiddleware");
-const {
-  multiUploadHandler,
-  audioUploadHandler,
-} = require("./Controllers/uploadController");
-const upload = require("./Config/multer");
-const { protect } = require("./Middlewares/authMiddleware");
+const authRoute = require("./routes/authRoute");
+const userRoute = require("./routes/userRoute");
+const chatRoute = require("./routes/chatRoute");
+const messageRoute = require("./routes/messageRoute");
+const errorHandler = require("./middlewares/errorMiddleware");
+const { protect } = require("./middlewares/authMiddleware");
+
+// uploads
+const upload = require("./config/multer");
+const { multiUploadHandler } = require("./controllers/uploadController");
 
 const app = express();
-
 app.use(
   cors({
     origin: process.env.ORIGIN,
     credentials: true,
   }),
 );
-
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
@@ -34,13 +31,9 @@ app.use(
 app.use(hpp());
 
 app.use(cookieParser());
+app.use(express.json());
 
-app.use(express.json({ limit: "10kb" }));
-
-// app.use(morgan("dev"));
-
-// app.post("/api/v0/uploads", upload.single("file"), uploadHandler); // max 1 files
-// app.post("/api/v0/uploads/audio", upload.single("audio"), audioUploadHandler);
+app.use(morgan("dev"));
 
 app.post(
   "/api/v0/uploads/:id",
@@ -52,7 +45,7 @@ app.post(
 app.use("/api/v0/auth", authRoute);
 app.use("/api/v0/users", userRoute);
 app.use("/api/v0/chats", chatRoute);
-app.use("/api/v0/messages", messagesRoute);
+app.use("/api/v0/messages", messageRoute);
 
 app.all("/{*any}", (req, res, next) => {
   res.status(404).json({

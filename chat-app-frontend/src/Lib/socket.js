@@ -1,16 +1,14 @@
 import { io } from "socket.io-client";
+import { useAuth } from "../Context/AuthContext";
+
 let socket = null;
-const api = "https://chat-app-6h3y.onrender.com"
-// const api = "http://localhost:8000";
+
+// const api = "https://chat-app-6h3y.onrender.com"
+const api = "http://localhost:8000";
 
 export const connectSocket = () => {
-  if (socket && socket?.connected === false) {
-    socket = io(api, {
-      transports: ["websocket"],
-      withCredentials: true,
-    });
-  }
-  if (!socket) {
+
+  if (!socket || !socket.connected) {
     socket = io(api, {
       transports: ["websocket"],
       withCredentials: true,
@@ -20,3 +18,4 @@ export const connectSocket = () => {
 };
 
 export const getSocket = () => socket;
+

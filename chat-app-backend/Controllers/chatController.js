@@ -1,48 +1,66 @@
-const Chat = require("../Models/Chat");
-const User = require("../Models/User");
-const asyncErrorHandler = require("../Utils/asyncErrorHandler");
+const CustomError = require("../utils/CustomError");
 
-exports.getOrCreateChat = asyncErrorHandler(async (req, res) => {
-  const senderId = req.user._id.toString();
-  const receiverId = req?.body?.receiverId.toString();
+const UserModel = require("../models/user.model");
+const asyncErrorHandler = require("../utils/asyncErrorHandler");
+const ChatModel = require("../models/chat.model");
+const ChatMemberModel = require("../models/chatMember.model");
 
-  const receiver = await User.findById(receiverId);
+
+exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
+  const senderId = req.user.id;
+  const receiverId = req?.params?.receiverId;
+  let chatId;
+
+  if (!receiverId) {
+    return next(new CustomError("User ID required!", 400));
+  }
+
+  if (!/^[0-9a-f-]{36}$/.test(receiverId)) {
+    return next(new CustomError("Invalid ID format!", 400));
+  }
+
+  const receiver = await UserModel.findById(receiverId);
   if (!receiver) {
-    return next(new CustomError("User not found!!", 404));
+    return next(new CustomError("User not found!", 404));
   }
 
   // 1. try to find existing chat
-  let chat = await Chat.findOne({
-    members: { $all: [senderId, receiverId] },
-  })?.populate("members", "name email photo");
+  if (senderId === receiverId) {
+    chatId = await ChatMemberModel.findChatByMember({ senderId });
+  } else {
+    chatId = await ChatMemberModel.findChatByMembers({
+      senderId,
+      receiverId,
+    });
+  }
 
-  // 2. if not found → create new chat
-  if (!chat) {
-    chat = await Chat.create({
-      members: [senderId, receiverId],
-      lastMessage: null, // no messages yet
+  if (!chatId && receiverId === senderId) {
+    //2 create own room if sender === receiver
+    chatId = await ChatModel.createChat();
+    await ChatMemberModel.createMember({
+      chatId,
+      senderId,
+    });
+  }
+
+  if (!chatId) {
+    // 3. if not found → create new chat
+    chatId = await ChatModel.createChat();
+    await ChatMemberModel.createMembers({
+      chatId,
+      senderId,
+      receiverId,
     });
   }
 
   res.status(200).json({
     status: "success",
-    data: chat,
+    data: chatId,
   });
 });
 
-exports.getPreviousChats = asyncErrorHandler(async (req, res, next) => {
-  const sender = req.user;
-
-  const chats = await Chat.find({
-    _id: { $in: sender?.previousChats },
-  })
-    .populate("members", "name email photo publicKey")
-    // .populate("lastMessage.sender", "name email photo publicKey")
-    .sort({ updatedAt: -1 });
-
-  if (!chats) {
-    return next(new CustomError("No prev chats!", 404));
-  }
+exports.getUserChats = asyncErrorHandler(async (req, res, next) => {
+  const chats = await ChatMemberModel.findChatsByUID(req.user.id);
 
   res.status(200).json({
     status: "success",

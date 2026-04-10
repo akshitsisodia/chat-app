@@ -1,46 +1,52 @@
-const mongoose = require("mongoose");
+const UserModel = require("../models/user.model");
+const asyncErrorHandler = require("../utils/asyncErrorHandler");
+const CustomError = require("../utils/CustomError");
+const sanitizeUser = require("../utils/sanitizeUser");
 
-const User = require("../Models/User");
-const CustomError = require("../Utils/CustomError");
-
-exports.getUsers = async (req, res, next) => {
-  const search = req?.query?.search;
-  const page = req?.query?.page ?? 1;
-  const limit = req?.query?.limit ?? 10;
+exports.getAllUsers = asyncErrorHandler(async (req, res, next) => {
+  const search = req?.query?.search || "";
+  const page = Number(req?.query?.page) || 1;
+  const limit = Number(req?.query?.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // filters
-  const filters = {
-    _id: { $ne: req.user._id },
-  };
+  let users = await UserModel.findUsers({ search, limit, skip });
 
-  if (search) {
-    filters.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-    ];
-  }
+  const total = await UserModel.countUsers({ search });
 
-  let users = await User.find(filters).skip(skip).limit(limit);
-  const length = await User.countDocuments(filters);
+  res.status(200).json({
+    status: "success",
+    total,
+    page,
+    limit,
+    data: users,
+  });
+});
 
-  if (!users) {
-    return next(new CustomError("No user Found!", 404));
+exports.getMe = asyncErrorHandler(async (req, res, next) => {
+  const user = await UserModel.findById(req.user.id);
+
+  if (!user || !user.is_active) {
+    return next(new CustomError("User not found", 404));
   }
 
   res.status(200).json({
     status: "success",
-    data: users,
-    total: length,
+    data: sanitizeUser(user),
   });
-};
-exports.getUserById = async (req, res, next) => {
+});
+
+exports.getUserById = asyncErrorHandler(async (req, res, next) => {
   const id = req?.params?.id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(new CustomError("Invalid user Id!", 400));
+
+  if (!id) {
+    return next(new CustomError("User ID required", 400));
   }
 
-  const user = await User.findById(id);
+  if (!/^[0-9a-f-]{36}$/.test(id)) {
+    return next(new CustomError("Invalid ID format", 400));
+  }
+
+  const user = await UserModel.findById(id);
 
   if (!user) {
     return next(new CustomError("No user Found!", 404));
@@ -48,42 +54,6 @@ exports.getUserById = async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: user,
+    data: sanitizeUser(user),
   });
-};
-exports.getPrevChatUsers = async (req, res, next) => {
-  const user = req.user;
-
-  const users = await User.find({ _id: { $in: user?.previousChats } });
-
-  if (!users) {
-    return next(new CustomError("No user Found!", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: users,
-  });
-};
-
-exports.getMe = (req, res) => {
-  const user = req.user;
-
-  res.status(200).json({
-    status: "success",
-    user,
-  });
-};
-exports.setPublicKey = async (req, res, next) => {
-  let user = req.user;
-
-  const publicKey = req?.body?.publicKey;
-  user.publicKey = publicKey;
-
-  await user.save();
-
-  res.status(200).json({
-    status: "success",
-    user,
-  });
-};
+});

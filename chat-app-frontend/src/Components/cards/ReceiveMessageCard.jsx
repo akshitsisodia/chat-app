@@ -3,7 +3,7 @@ import { decryptMessage } from "../../Hooks/useEncryptMessage"
 
 function ReceiveMessageCard({ message, nonce, sender }) {
 
-  const content = decryptMessage(message, nonce, sender?.publicKey, localStorage.getItem("privateKey"))
+  const content = decryptMessage(message, nonce, sender?.public_key, localStorage.getItem("privateKey"))
 
   return (
     <p className="receiveMessageCard">
