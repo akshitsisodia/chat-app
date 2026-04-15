@@ -19,7 +19,7 @@ function ChatCard({ data }) {
     }
     const cardClickedHandler = async () => {
         await queryClient.invalidateQueries(["user"])
-        navigate(`/${data.user_id}`)
+        navigate(`/${data.chat_id}`)
 
     }
     const date = new Date(data.last_message_time)

@@ -1,4 +1,4 @@
-import React from 'react'
+
 import FilePreview from '../ui/FilePreview'
 
 function FilesList({ data, public_key, imageButtonClicked }) {

@@ -9,12 +9,13 @@ const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
 const chatRoute = require("./routes/chatRoute");
 const messageRoute = require("./routes/messageRoute");
-const errorHandler = require("./middlewares/errorMiddleware");
 const { protect } = require("./middlewares/authMiddleware");
+const CustomError = require("./utils/CustomError");
+const globalErrorHandler = require("./controllers/errorController");
 
 // uploads
 const upload = require("./config/multer");
-const { multiUploadHandler } = require("./controllers/uploadController");
+const { multiUploadHandler, handleUpload } = require("./controllers/uploadController");
 
 const app = express();
 app.use(
@@ -33,12 +34,16 @@ app.use(hpp());
 app.use(cookieParser());
 app.use(express.json());
 
-app.use(morgan("dev"));
+if (process.env.NODE_ENV !== "production") {
+  app.use(morgan("dev"));
+}
+
+// ! routes  routes  routes  routes routes routes routes routes routes routes routes  routes routes  routes  routes routes  routes  routes  routes
 
 app.post(
   "/api/v0/uploads/:id",
   protect,
-  upload.array("files", 5),
+  handleUpload({field:"files",type:"array",maxCount:5}),
   multiUploadHandler,
 ); // max 5 files
 
@@ -47,13 +52,12 @@ app.use("/api/v0/users", userRoute);
 app.use("/api/v0/chats", chatRoute);
 app.use("/api/v0/messages", messageRoute);
 
+// ! routes  routes  routes  routes routes routes routes routes routes routes routes  routes routes  routes  routes routes  routes  routes  routes
+
 app.all("/{*any}", (req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: `Route ${req.originalUrl} not found`,
-  });
+  next(new CustomError(`Cannot find ${req.originalUrl} on the server!`, 404));
 });
 
-app.use(errorHandler);
+app.use(globalErrorHandler);
 
 module.exports = app;

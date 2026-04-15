@@ -1,14 +1,15 @@
 import "../../Styles/Cards.css"
 import { useNavigate } from 'react-router-dom'
 
-function UserCard({ receiver, children }) {
+function UserCard({ receiver, chatId, children }) {
     const navigate = useNavigate();
 
+
     const imageClickedHandler = () => {
-        navigate(`/users/${receiver?._id}`)
+        navigate(`/users/${receiver?.id}`)
     }
     const cardClickedHandler = () => {
-        navigate(`/users/${receiver?._id}`)
+        navigate(`/chats/${chatId}`)
     }
     return (
         <div className="chatCard">

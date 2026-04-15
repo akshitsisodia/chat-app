@@ -10,6 +10,7 @@ import { getSocket } from "../../Lib/socket"
 import { useNavigate } from "react-router-dom"
 import { FaMagnifyingGlass } from "react-icons/fa6"
 import ChatsList from "../common/ChatsList"
+import { useChats } from "../../Context/ChatsContext"
 
 
 function Chats({ activeId }) {
@@ -17,12 +18,8 @@ function Chats({ activeId }) {
     const socket = getSocket();
     const navigate = useNavigate();
 
+    const { chats, isLoading, error } = useChats()
 
-    const { data, isLoading, error } = useQuery({
-        queryKey: ["previousChatUsers"],
-        queryFn: getPrevChats,
-    })
-    const chats = data?.data ?? []
 
     useEffect(() => {
         const handler = (message) => {
@@ -46,7 +43,7 @@ function Chats({ activeId }) {
                 })
             }
 
-            queryClient.setQueryData(["previousChatUsers"], (old) => {
+            queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
                 const updated = old.data.map(curr => {
@@ -85,7 +82,7 @@ function Chats({ activeId }) {
 
     useEffect(() => {
         const handler = (chat) => {
-            queryClient.setQueryData(["previousChatUsers"], (old) => {
+            queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
                 const filtered = old.data.filter(c => c.chat_id != chat.chat_id);

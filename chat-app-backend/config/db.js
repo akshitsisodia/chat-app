@@ -1,24 +1,32 @@
 const pg = require("pg");
 const { Pool } = pg;
 
-// const user = process.env.PG_USER || "postgres";
-// const host = process.env.PG_HOST || "localhost";
-// const database = process.env.PG_DATABASE || "chat_app";
-// const password = process.env.PG_PASS ;
-// const port = process.env.PG_PORT;
-// const pool = new Pool({
-//   user,
-//   host,
-//   database,
-//   password,
-//   port,
-// });
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+let credentials;
+
+const user = process.env?.PG_USER;
+const host = process.env?.PG_HOST;
+const database = process.env?.PG_DATABASE;
+const password = process.env?.PG_PASS;
+const port = process.env?.PG_PORT;
+const url = process.env?.DATABASE_URL;
+
+if (process.env.NODE_ENV === "production") {
+  credentials = {
+    connectionString: url,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  };
+} else {
+  credentials = {
+    user,
+    host,
+    database,
+    password,
+    port,
+  };
+}
+const pool = new Pool(credentials);
 
 async function initDB() {
   try {

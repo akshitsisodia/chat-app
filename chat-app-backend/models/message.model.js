@@ -2,7 +2,9 @@ const { pool } = require("../config/db");
 const { v4: uuidv4 } = require("uuid");
 
 const MessageModel = {
-  async create({ chatId, senderId, content, nonce }) {
+  async create({ chatId, senderId, content, nonce }, client) {
+    const executor = client || pool;
+
     const id = uuidv4();
 
     const query = `
@@ -27,57 +29,59 @@ const MessageModel = {
 
     const values = [id, chatId, senderId, content, nonce];
 
-    const { rows } = await pool.query(query, values);
+    const { rows } = await executor.query(query, values);
 
     return rows[0];
   },
 
-  async find({ chatId, senderId, limit, offset }) {
+  async find({ chatId, senderId, limit, offset }, client) {
+    const executor = client || pool;
+
     const query = `
     SELECT
-  m.id,
-  m.content,
-  m.nonce,
-  m.sender_id,
-  m.created_at,
+    m.id,
+    m.content,
+    m.nonce,
+    m.sender_id,
+    m.created_at,
 
-  COALESCE(f.files, '[]') AS files,
+    COALESCE(f.files, '[]') AS files,
 
-  EXISTS (
-    SELECT 1
-    FROM message_seen ms
-    WHERE ms.message_id = m.id
-      AND ms.user_id != $2
-  ) AS seen
+    EXISTS (
+      SELECT 1
+      FROM message_seen ms
+      WHERE ms.message_id = m.id
+        AND ms.user_id != $2
+    ) AS seen
 
-FROM messages m
+    FROM messages m
 
-LEFT JOIN (
-  SELECT
-    mf.message_id,
-    json_agg(
-      json_build_object(
-        'url', mf.url,
-        'name', mf.name,
-        'type', mf.type,
-        'file_nonce', mf.file_nonce,
-        'encrypted_key', mf.encrypted_key,
-        'iv', mf.iv
-      )
-    ) AS files
-  FROM message_files mf
-  GROUP BY mf.message_id
-) f ON f.message_id = m.id
+    LEFT JOIN (
+      SELECT
+        mf.message_id,
+        json_agg(
+          json_build_object(
+            'url', mf.url,
+            'name', mf.name,
+            'type', mf.type,
+            'file_nonce', mf.file_nonce,
+            'encrypted_key', mf.encrypted_key,
+            'iv', mf.iv
+          )
+        ) AS files
+      FROM message_files mf
+      GROUP BY mf.message_id
+    ) f ON f.message_id = m.id
 
-WHERE m.chat_id = $1
-ORDER BY m.created_at DESC
-LIMIT $3 OFFSET $4;
+    WHERE m.chat_id = $1
+    ORDER BY m.created_at DESC
+    LIMIT $3 OFFSET $4;
     `;
 
     const values = [chatId, senderId, limit, offset];
 
     try {
-      const { rows } = await pool.query(query, values);
+      const { rows } = await executor.query(query, values);
 
       return rows;
     } catch (error) {
@@ -85,57 +89,9 @@ LIMIT $3 OFFSET $4;
     }
   },
 
-  // async find({ chatId, senderId, limit, skip }) {
-  //   const query = `
-  //   WITH paginated_messages AS (
-  //     SELECT *
-  //     FROM messages
-  //     WHERE chat_id = $1
-  //     ORDER BY created_at DESC
-  //     LIMIT $3 OFFSET $4
-  //   )
-  //   SELECT
-  //     m.id,
-  //     m.content,
-  //     m.nonce,
-  //     m.sender_id,
-  //     m.created_at,
+  async countMessages({ chatId }, client) {
+    const executor = client || pool;
 
-  //     EXISTS (
-  //       SELECT 1
-  //       FROM message_seen ms
-  //       WHERE ms.message_id = m.id
-  //         AND ms.user_id != $2
-  //     ) AS seen,
-
-  //     COALESCE(
-  //       json_agg(
-  //         json_build_object(
-  //           'id', mf.id,
-  //           'url', mf.url,
-  //           'type', mf.type,
-  //           'name', mf.name,
-  //           'encrypted_key', mf.encrypted_key,
-  //           'iv', mf.iv,
-  //           'nonce', mf.nonce
-  //         )
-  //       ) FILTER (WHERE mf.id IS NOT NULL),
-  //       '[]'
-  //     ) AS files
-
-  //   FROM paginated_messages m
-  //   LEFT JOIN message_files mf ON mf.message_id = m.id
-
-  //   GROUP BY m.id
-  //   ORDER BY m.created_at DESC;
-  // `;
-
-  //   const values = [chatId, senderId, limit, skip];
-  //   const { rows } = await pool.query(query, values);
-  //   return rows;
-  // },
-
-  async countMessages({ chatId }) {
     const query = `
         SELECT COUNT(*) 
         FROM messages
@@ -144,7 +100,7 @@ LIMIT $3 OFFSET $4;
 
     const values = [chatId];
 
-    const { rows } = await pool.query(query, values);
+    const { rows } = await executor.query(query, values);
 
     return Number(rows[0].count);
   },

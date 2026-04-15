@@ -1,51 +1,85 @@
-const { pool } = require("./config/db");
+const pg = require("pg");
+const { Pool } = pg;
+
+const user = "postgres";
+const host = "localhost";
+const database = "chat_app";
+const password = "akshit";
+const port = 5432;
+
+const pool = new Pool({
+  user,
+  host,
+  database,
+  password,
+  port,
+});
 
 async function createTables() {
-  // users table
+  //group keys
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        is_verified BOOLEAN DEFAULT FALSE,
-        password_hash TEXT,
-        photo TEXT DEFAULT 'https://i.pinimg.com/736x/62/01/0d/62010d848b790a2336d1542fcda51789.jpg',
-        public_key TEXT,
-        encrypted_private_key TEXT,
-        salt TEXT,
-        iv TEXT,
-        is_active BOOLEAN DEFAULT TRUE,
-        login_attempts INTEGER DEFAULT 0 CHECK (login_attempts <= 5),
-        lockout_until TIMESTAMP,
-        password_reset_token TEXT,
-        password_reset_token_expires TIMESTAMP,
-        password_changed_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-    )
-  `);
+    CREATE TABLE IF NOT EXISTS group_keys (
+      chat_id      UUID NOT NULL,
+      user_id      UUID NOT NULL,
+      encrypted_key TEXT NOT NULL,
+      key_version  INT NOT NULL DEFAULT 1,
+      created_at   TIMESTAMP DEFAULT NOW(),
 
-  // otp codes table
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS otp_codes 
-    (
-        id UUID PRIMARY KEY,
-        email TEXT NOT NULL,
-        otp TEXT NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
-        attempts INTEGER DEFAULT 0
+      PRIMARY KEY (chat_id, user_id, key_version)
     )
     `);
+    
+  // users table
+  // await pool.query(`
+  //   CREATE TABLE IF NOT EXISTS users (
+  //       id UUID PRIMARY KEY,
+  //       name TEXT NOT NULL,
+  //       email TEXT NOT NULL UNIQUE,
+  //       is_verified BOOLEAN DEFAULT FALSE,
+  //       password_hash TEXT,
+  //       photo TEXT DEFAULT 'https://i.pinimg.com/736x/62/01/0d/62010d848b790a2336d1542fcda51789.jpg',
+  //       public_key TEXT,
+  //       encrypted_private_key TEXT,
+  //       salt TEXT,
+  //       iv TEXT,
+  //       is_active BOOLEAN DEFAULT TRUE,
+  //       login_attempts INTEGER DEFAULT 0 CHECK (login_attempts <= 5),
+  //       lockout_until TIMESTAMP,
+  //       password_reset_token TEXT,
+  //       password_reset_token_expires TIMESTAMP,
+  //       password_changed_at TIMESTAMP,
+  //       created_at TIMESTAMP DEFAULT NOW(),
+  //       updated_at TIMESTAMP DEFAULT NOW()
+  //   )
+  // `);
 
+  // otp codes table
+  // await pool.query(`
+  //   CREATE TABLE IF NOT EXISTS otp_codes
+  //   (
+  //       id UUID PRIMARY KEY,
+  //       email TEXT NOT NULL,
+  //       otp TEXT NOT NULL,
+  //       expires_at TIMESTAMP NOT NULL,
+  //       created_at TIMESTAMP DEFAULT NOW(),
+  //       attempts INTEGER DEFAULT 0
+  //   )
+  //   `);
+
+  // !updating
   // chats table
   await pool.query(`
       CREATE TABLE IF NOT EXISTS chats (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        type TEXT DEFAULT 'private',
+        name TEXT,
+        photo TEXT,
+        created_by UUID REFERENCES users(id),
+        pair_key TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
-      )
-      `);
+      )  
+    `);
 
   // chat menmbers table
   await pool.query(`
@@ -63,7 +97,7 @@ async function createTables() {
         chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
         sender_id UUID REFERENCES users(id),
         content TEXT,
-        nonce TEXT NOT NULL,
+        nonce TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
       `);
@@ -95,7 +129,10 @@ async function createTables() {
     url TEXT NOT NULL,
     type TEXT,       
     name TEXT,
+    encrypted_key TEXT,
+    iv TEXT,
     size INTEGER,
+    file_nonce TEXT,
     created_at TIMESTAMP DEFAULT NOW()
   );
   `);

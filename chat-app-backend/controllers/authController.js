@@ -19,12 +19,8 @@ exports.generateOtp = asyncErrorHandler(async (req, res, next) => {
   const name = req?.body?.name;
   const email = req?.body?.email.toLowerCase();
 
-  if (!name || !email) {
-    return next(new CustomError("All credentials required!", 400));
-  }
-
   const isUser = await UserModel.findByEmail(email);
-  if (isUser && !(isUser.passwordHash == null)) {
+  if (isUser && !(isUser.password_hash == null)) {
     return next(
       new CustomError("User already exist with this email! Please login", 400),
     );
@@ -64,10 +60,6 @@ exports.verifyOtp = asyncErrorHandler(async (req, res, next) => {
   const email = req?.body?.email;
   const otp = req?.body?.otp;
 
-  if (!email || !otp) {
-    return next(new CustomError("All credentials required!", 400));
-  }
-
   const hashOtp = crypto.createHash("sha256").update(otp).digest("hex");
 
   const otpRecord = await OtpModel.verifyOtp({ email, otp: hashOtp });
@@ -97,17 +89,6 @@ exports.register = asyncErrorHandler(async (req, res, next) => {
   const salt = req?.body?.salt;
   const iv = req?.body?.iv;
 
-  if (
-    !email ||
-    !password ||
-    !publicKey ||
-    !encryptedPrivateKey ||
-    !salt ||
-    !iv
-  ) {
-    return next(new CustomError("All credentials required!", 400));
-  }
-
   const user = await UserModel.findByEmail(email);
 
   if (!user) {
@@ -117,7 +98,7 @@ exports.register = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError("Please verify your email first", 400));
   }
 
-  console.log(new Date(user.verification_expires_at).getTime(), Date.now())
+  console.log(new Date(user.verification_expires_at).getTime(), Date.now());
 
   if (
     !user.verification_expires_at ||
@@ -146,10 +127,8 @@ exports.register = asyncErrorHandler(async (req, res, next) => {
 });
 
 exports.login = asyncErrorHandler(async (req, res, next) => {
-  const { email, password } = req.body;
-
-  if (!email || !password)
-    return next(new CustomError("All credentials required!", 400));
+  const email = req?.body?.email.toLowerCase();
+  const password = req?.body?.password;
 
   const user = await UserModel.findByEmail(email);
 
@@ -201,6 +180,7 @@ exports.login = asyncErrorHandler(async (req, res, next) => {
 
   sendResponse(safeUser, res, 200);
 });
+
 exports.logout = asyncErrorHandler(async (req, res, next) => {
   res.cookie("token", "", logoutOptions);
   res.status(200).json({ status: "success", message: "Logout successfully" });

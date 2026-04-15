@@ -1,22 +1,49 @@
 const { pool } = require("../config/db");
 
 const ChatUnreads = {
-  async createOrupdateUnreads({ chatId, receiverId }) {
+  // async createOrupdateUnreads({ chatId, receiverId }, client) {
+  //   const executor = client || pool;
+
+  //   const query = `
+  //   INSERT INTO chat_unreads (chat_id, user_id, unread_count)
+  //   VALUES ($1, $2, 1)
+  //   ON CONFLICT (chat_id, user_id)
+  //   DO UPDATE
+  //   SET unread_count = chat_unreads.unread_count + 1
+  //   RETURNING unread_count
+  //   `;
+
+  //   const { rows } = await executor.query(query, [chatId, receiverId]);
+
+  //   return rows[0]?.unread_count || 0;
+  // },
+
+  async createOrupdateUnreads({ chatId, receiverIds }, client) {
+    const executor = client || pool;
+    console.log("worksss")
     const query = `
     INSERT INTO chat_unreads (chat_id, user_id, unread_count)
-    VALUES ($1, $2, 1)
+    SELECT 
+      $1 AS chat_id,
+      user_id,
+      1
+    FROM UNNEST($2::uuid[]) AS user_id
+
     ON CONFLICT (chat_id, user_id)
     DO UPDATE
     SET unread_count = chat_unreads.unread_count + 1
-    RETURNING unread_count
-    `;
 
-    const { rows } = await pool.query(query, [chatId, receiverId]);
+    RETURNING user_id, unread_count;
+  `;
 
-    return rows[0]?.unread_count || 0;
+    const { rows } = await executor.query(query, [chatId, receiverIds]);
+
+    return rows; // [{ user_id, unread_count }]
   },
 
-  async resetUnreads({ chatId, senderId }) {
+  async resetUnreads({ chatId, senderId }, client) {
+    const executor = client || pool;
+
     const query = `
         UPDATE chat_unreads
         SET unread_count = 0
@@ -26,7 +53,7 @@ const ChatUnreads = {
 
     const values = [chatId, senderId];
 
-    const { rows } = await pool.query(query, values);
+    const { rows } = await executor.query(query, values);
 
     return rows[0];
   },

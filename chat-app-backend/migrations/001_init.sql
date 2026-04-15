@@ -1,6 +1,18 @@
 -- enable uuid
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+CREATE TABLE IF NOT EXISTS group_keys (
+      chat_id      UUID NOT NULL,
+      user_id      UUID NOT NULL,
+      encrypted_key TEXT NOT NULL,
+      key_version  INT NOT NULL DEFAULT 1,
+      created_at   TIMESTAMP DEFAULT NOW(),
+      nonce TEXT,
+      ephemeral_public_key TEXT,
+
+      PRIMARY KEY (chat_id, user_id, key_version)
+);
+
 -- users
  CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY,
@@ -55,7 +67,7 @@ CREATE TABLE IF NOT EXISTS chat_members (
         chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
         sender_id UUID REFERENCES users(id),
         content TEXT,
-        nonce TEXT NOT NULL,
+        nonce TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
 

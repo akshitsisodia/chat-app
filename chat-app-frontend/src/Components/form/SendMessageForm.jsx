@@ -7,12 +7,10 @@ import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPause, FaPlus, FaVi
 import { useUploadMutation } from "../../Hooks/useMutation";
 import { getSocket } from "../../Lib/socket";
 import { encryptMessage } from "../../Hooks/useEncryptMessage";
-import { useAuth } from "../../Context/AuthContext";
 
 
 
 function SendMessageForm({ id, receiver, content, setContent }) {
-    const { me } = useAuth();
     const socket = getSocket()
     const [openFiles, setOpenFiles] = useState(false);
     const [files, setFiles] = useState(null);
@@ -239,7 +237,7 @@ function SendMessageForm({ id, receiver, content, setContent }) {
         const { encrypted, nonce } = encryptMessage(content, localStorage.getItem("privateKey"), receiver?.public_key);
 
         const data = {
-            receiverId: id,
+            chatId: id,
             content: encrypted,
             nonce,
         }

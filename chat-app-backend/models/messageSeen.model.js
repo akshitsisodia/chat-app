@@ -1,7 +1,9 @@
 const { pool } = require("../config/db");
 
 const MessageSeenModel = {
-  async markSeen({ chatId, senderId }) {
+  async markSeen({ chatId, senderId }, client) {
+    const executor = client || pool;
+
     const query = `
         INSERT INTO message_seen (message_id, user_id)
         SELECT id, $2
@@ -13,7 +15,7 @@ const MessageSeenModel = {
 
     const values = [chatId, senderId];
 
-    await pool.query(query, values);
+    await executor.query(query, values);
   },
 };
 

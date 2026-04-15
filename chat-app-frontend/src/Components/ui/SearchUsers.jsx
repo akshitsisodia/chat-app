@@ -6,8 +6,9 @@ import UsersList from "../common/UsersList";
 import { useDebounce } from "../../Hooks/useDebounce";
 import useQueryParams from "../../Hooks/useQueryParams";
 import Pagination from "../filters/Pagination";
+import Loading from "./Loading";
 
-function SearchUsers() {
+function SearchUsers({ heading, select, memberIds, setMembers }) {
     const { getParams, setParams } = useQueryParams();
 
     const search = getParams("search", "")
@@ -15,7 +16,7 @@ function SearchUsers() {
     // const sort = getParams("sort", "")
     // const order = getParams("order", "")
 
-    const limit = 7;
+    const limit = 6;
 
     const debounceData = useDebounce(search, 800);
 
@@ -55,13 +56,13 @@ function SearchUsers() {
     return (
         <div className="search-users">
             <div className="search-users-main">
-                <h1 className="users-heading">Find Users</h1>
+                <h1 className="users-heading">{heading}</h1>
                 <Search search={search} setSearch={searchHandlers} />
             </div>
-
             <div className="userList-container">
-                <UsersList data={users} isLoading={isLoading} error={error} />
-                <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />
+                {isLoading && <Loading />}
+                {!isLoading && !error && <UsersList data={users} select={select} setMembers={setMembers} memberIds={memberIds}/>}
+                {!isLoading && !error && <Pagination page={page} totalPages={totalPages} onPageChange={onPageChange} />}
             </div>
 
 

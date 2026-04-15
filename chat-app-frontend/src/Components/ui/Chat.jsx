@@ -30,7 +30,7 @@ function Chat({ id }) {
 
         queryFn: ({ pageParam = 0, signal }) =>
             getPrivateMessage({
-                receiverId: id,
+                id: id,
                 offset: pageParam,
                 limit: LIMIT,
                 signal
@@ -49,18 +49,15 @@ function Chat({ id }) {
         },
     });
 
-    // const messages =
-    //     data?.pages.flatMap(page => page.data) ?? [];
-
     const messages = data?.pages
         .flatMap(page => page.data)
         .filter((msg, index, self) =>
             index === self.findIndex(m => m.id === msg.id)
         ) ?? [];
 
-    const receiver = data?.pages
-        .flatMap((page) => page.receiver)[0]
-        ?? {}
+    const receivers = data?.pages
+        .flatMap((page) => page.receivers)
+        ?? []
 
     const messageScrollHandler = (e) => {
         const { scrollTop, scrollHeight, clientHeight } = e.target;
@@ -112,21 +109,21 @@ function Chat({ id }) {
             <div className="chat-top">
                 <ButtonGoBack />
 
-                <UserCard receiver={receiver} >
+                <UserCard receiver={receivers[0]} chatId={id}>
                     {/* <FaEllipsisV /> */}
                 </UserCard>
             </div>
 
             {/* main  */}
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>
-                <Messages receiver={receiver} id={id} content={content} messages={messages} />
+                <Messages receiver={receivers[0]} id={id} content={content} messages={messages} />
                 {isFetchingNextPage || !scroll && <div className="loader"></div>}
                 {/* <br /> */}
                 {/* {messages.length < 20 && <ProfileUserDetails user={receiver} />} */}
             </div>
 
             {/* input  */}
-            <SendMessageForm receiver={receiver} id={id} content={content} setContent={setContent} />
+            <SendMessageForm receiver={receivers[0]} id={id} content={content} setContent={setContent} />
         </div>
     )
 }

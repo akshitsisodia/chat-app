@@ -21,7 +21,6 @@ export const AuthProvider = ({ children }) => {
 
     const me = data?.data ?? undefined
 
-
     useEffect(() => {
         connectSocket();
     }, [])

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import Loading from "../ui/Loading";
 
-function UsersList({ data, isLoading, chatCard, activeId }) {
+function UsersList({ data, select, activeId, memberIds, setMembers }) {
 
     const navigate = useNavigate();
     const imageClickedHandler = (id) => {
@@ -15,7 +15,6 @@ function UsersList({ data, isLoading, chatCard, activeId }) {
     }
 
 
-    if (isLoading) return <Loading />
     return (
         <>
             {data?.length > 0 && data?.map(curr => {
@@ -24,18 +23,19 @@ function UsersList({ data, isLoading, chatCard, activeId }) {
 
                         {/* <hr /> */}
                         <div className="chatCard">
-                            <button className="chatCard-image" onClick={() => imageClickedHandler(curr.id)}>
+                            <button className="chatCard-image" onClick={() => select ? "" : imageClickedHandler(curr.id)}>
                                 <img src={curr?.photo} alt={curr?.name} className="chat-photo" />
                             </button>
-                            <button className="chatCard-content" onClick={() => cardClickedHandler(curr.id)}>
+                            <button className="chatCard-content" onClick={() => select ? "" : cardClickedHandler(curr.id)}>
                                 <h4 className='chatCard-content-top'>{curr?.name}</h4>
                                 <p className="chatCard-content-main">{curr?.email}</p>
                             </button>
-                            <div className="userCard-end">
+                            {!select && <div className="userCard-end">
                                 <ButtonFirstMessage id={curr.id} user={curr}>
                                     Message
                                 </ButtonFirstMessage>
-                            </div>
+                            </div>}
+                            {select && select !== "hide" && <button type="button" className="user-list-select-button" style={memberIds?.includes(curr.id) || select === "selected" ? { backgroundColor: "var(--primary-color)", color: "#fff", border: "none" } : {}} onClick={() => memberIds?.includes(curr.id) || select === "selected" ? "" : setMembers(prev => [...prev, curr])}>{memberIds?.includes(curr.id) || select === "selected" ? "Added" : "Add"}</button>}
 
                         </div>
                     </div>

@@ -1,13 +1,15 @@
-const fs = require("fs");
-const asyncErrorHandler = require("../utils/asyncErrorHandler");
 const CustomError = require("../utils/CustomError");
 const cloudinary = require("../config/cloudinary");
+const fs = require("fs/promises");
+
+const asyncErrorHandler = require("../utils/asyncErrorHandler");
 const { getIO } = require("../config/socket");
 const ChatMemberModel = require("../models/chatMember.model");
 const MessageModel = require("../models/message.model");
 const FileModel = require("../models/file.model");
 const ChatUnreads = require("../models/chatUnread.model");
 const ChatModel = require("../models/chat.model");
+const { uploadImage, uploadAny } = require("../config/multer");
 
 const getResourceType = (mimetype) => {
   if (mimetype.startsWith("image/")) return "image";
@@ -18,11 +20,12 @@ const getResourceType = (mimetype) => {
 
 exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
   const content = req?.body?.content;
-  const receiverId = req.params.id;
+  const nonce = req?.body?.nonce;
+  const chatId = req.params.id;
   const senderId = req.user.id;
 
-  const keys = Array.isArray(req.body.keys) ? req.body.keys : [req.body.keys];
-  const nonces = Array.isArray(req.body.nonces)
+  const keys = Array.isArray(req.body?.keys) ? req.body.keys : [req.body.keys];
+  const nonces = Array.isArray(req.body?.nonces)
     ? req.body.nonces
     : [req.body.nonces];
 
@@ -37,42 +40,69 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
 
   const files = req.files;
 
-  const results = [];
+  if (!req.files || req.files.length === 0) {
+    return next(new CustomError("No files uploaded", 400));
+  }
 
-  const chatId = await ChatMemberModel.findChatByMembers({
+  if (
+    files.length !== types.length ||
+    files.length !== names.length ||
+    files.length !== ivs.length
+  ) {
+    return next(new CustomError("Invalid file metadata", 400));
+  }
+
+  const receivers = await ChatMemberModel.findReceiversByChatId({
+    chatId,
     senderId,
-    receiverId,
   });
-  if (!chatId) {
-    return next(new CustomError("Chat not found!", 404));
+  const receiverIds = receivers.map((r) => r.user_id);
+
+  // 1. find
+  let chat = await ChatModel.findById(chatId);
+
+  if (!chat) {
+    return next(new CustomError("chat not found!", 404));
   }
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+  const results = await Promise.all(
+    files.map(async (file, i) => {
+      try {
+        const resourceType = getResourceType(file.mimetype);
 
-    let resourceType = getResourceType(file.mimetype);
+        const result = await cloudinary.uploader.upload(file.path, {
+          resource_type: resourceType,
+          timeout: 60000,
+        });
 
-    const result = await cloudinary.uploader.upload(file.path, {
-      resource_type: resourceType,
-      timeout: 60000,
-    });
+        // delete file after upload
+        await fs.unlink(file.path);
 
-    results.push({
-      url: result.secure_url,
-      type: types[i],
-      name: names[i],
-      encrypted_key: keys[i],
-      iv: ivs[i],
-      nonce: nonces[i],
-    });
-  }
+        return {
+          url: result.secure_url,
+          type: types[i],
+          name: names[i],
+          encrypted_key: keys[i],
+          iv: ivs[i],
+          nonce: nonces[i],
+        };
+      } catch (err) {
+        // cleanup even if upload fails
+        try {
+          await fs.unlink(file.path);
+        } catch (_) {}
 
-  // add Message to db
+        throw err;
+      }
+    }),
+  );
+
+  // 2. create message
   const message = await MessageModel.create({
     chatId,
     senderId,
-    content: "",
-    nonce: "",
+    content,
+    nonce,
   });
 
   const files_data = await Promise.all(
@@ -82,39 +112,92 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
         url: curr.url,
         type: curr.type,
         name: curr.name,
-        encrypted_key: curr.encrypted_key,
         iv: curr.iv,
-        nonce: curr.nonce,
+        encrypted_key: curr?.encrypted_key,
+        nonce: curr?.nonce,
       });
     }),
   );
 
-  //update unreads
-  const unread_count = await ChatUnreads.createOrupdateUnreads({
+  // 3. update unread
+  const unreadCounts = await ChatUnreads.createOrupdateUnreads({
     chatId,
-    receiverId,
+    receiverIds,
   });
 
-  // update chat
-  const chat = await ChatModel.updateChat(chatId);
-  if (chat.is_first_update) {
-    const updatedReceiverChat = await ChatMemberModel.findChat({
-      chatId,
-      userId: receiverId,
-    });
-    getIO().to(receiverId).emit("newChat", updatedReceiverChat);
-  }
+  // 4. update chat
+  await ChatModel.updateChat(chatId);
 
   getIO()
-    .to([chatId, receiverId, senderId])
+    .to(senderId)
     .emit("newMessage", {
       ...message,
-      unread_count,
+      unread_count: 0,
       files: files_data,
     });
+
+  // send to receivers
+  if (chat.type === "private") {
+    receiverIds.forEach((receiverId) => {
+      const userUnread =
+        unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
+
+      getIO()
+        .to(receiverId)
+        .emit("newMessage", {
+          ...message,
+          unread_count: userUnread,
+          files: files_data,
+        });
+    });
+  }
+
+  // getIO()
+  //   .to(chat.id)
+  //   .to(receivers)
+  //   .emit("newMessage", {
+  //     ...message,
+  //     unread_count,
+  //     files: files_data,
+  //   });
 
   res.status(200).json({
     status: "success",
     message: "Data sent successfully",
   });
 });
+
+exports.handleUpload =
+  ({ field, type = "single", maxCount = 5 }) =>
+  (req, res, next) => {
+    let multerMiddleware;
+
+    if (type === "single") {
+      multerMiddleware = uploadImage.single(field);
+    } else if (type === "array") {
+      multerMiddleware = uploadAny.array(field, maxCount);
+    }
+
+    multerMiddleware(req, res, (error) => {
+      if (!error) return next();
+
+      if (error.name === "MulterError") {
+        let message;
+
+        if (error.code === "LIMIT_UNEXPECTED_FILE") {
+          message =
+            type === "array"
+              ? `File limit exceeded (max ${maxCount} files allowed)`
+              : `Unexpected field: ${error.field}`;
+        } else if (error.code === "LIMIT_FILE_SIZE") {
+          message = "File too large";
+        } else {
+          message = error.message;
+        }
+
+        return next(new CustomError(message, 400));
+      }
+
+      return next(new CustomError(`Upload failed ${error}`, 400));
+    });
+  };

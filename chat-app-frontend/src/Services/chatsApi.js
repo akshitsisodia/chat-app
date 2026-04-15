@@ -8,3 +8,19 @@ export const getPrevChats = async () => {
   const res = await API.get("chats/prev-chats");
   return res.data;
 };
+export const createGroup = async (file) => {
+  const res = await API.post("chats/create-group", file);
+  return res.data;
+};
+export const getMyGroups = async () => {
+  const res = await API.get("chats/my-groups");
+  return res.data;
+};
+export const getGroupKeys = async ({ id }) => {
+  const res = await API.get(`chats/group-keys/${id}`);
+  return res.data;
+};
+export const getGroupMembers = async ({ id }) => {
+  const res = await API.get(`chats/${id}`);
+  return res.data;
+};

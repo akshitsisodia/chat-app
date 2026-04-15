@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom'
 
 import "../../Styles/Sidebar.css"
-import { FaMessage, FaRightFromBracket } from 'react-icons/fa6'
+import { FaMessage, FaPlus, FaRightFromBracket, FaUserGroup, FaUserPlus } from 'react-icons/fa6'
 import { FaSearch } from 'react-icons/fa'
 import { useAuth } from '../../Context/AuthContext'
 
@@ -18,8 +18,10 @@ function Sidebar() {
 
                 <nav className="sidebar-nav">
                     <ul className="nav-links">
-                        <li className={"nav-link"}><NavLink to={'/'} className={({ isActive }) => isActive || window.location.pathname.startsWith("/69") ? "nav-link-active" : ""}  ><FaMessage className='aside-icon' /><span className="aside-name">Messages</span></NavLink></li>
                         <li className="nav-link "><NavLink to={'/users'} className={({ isActive }) => isActive ? "nav-link-active" : ""}><FaSearch className='aside-icon' /><span className="aside-name">Search</span></NavLink></li>
+                        <li className={"nav-link"}><NavLink to={'/'} className={({ isActive }) => isActive || window.location.pathname.startsWith("/69") ? "nav-link-active" : ""}  ><FaMessage className='aside-icon' /><span className="aside-name">Messages</span></NavLink></li>
+                        <li className={"nav-link"}><NavLink to={'/my-groups'} className={({ isActive }) => isActive ? "nav-link-active" : ""}  ><FaUserGroup className='aside-icon' /><span className="aside-name">My Groups</span></NavLink></li>
+                        <li className={"nav-link"}><NavLink to={'/create-group'} className={({ isActive }) => isActive ? "nav-link-active" : ""}  ><FaPlus className='aside-icon' /><span className="aside-name">Create Group</span></NavLink></li>
                     </ul>
                 </nav>
             </div>

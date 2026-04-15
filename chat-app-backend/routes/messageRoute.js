@@ -8,7 +8,8 @@ const { getOrCreateChat } = require("../middlewares/getChatMiddleware");
 
 const router = express.Router();
 
-router.get("/:receiverId", protect, getOrCreateChat, getMessages);
+// router.get("/:chatId", protect, getOrCreateChat, getMessages);
+router.get("/:chatId", protect, getMessages);
 router.post("/:chatId", protect, postMessage);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 import ChatCard from '../cards/ChatCard';
+import GroupCard from '../cards/GroupCard';
 import Loading from '../ui/Loading';
 
 function ChatsList({ data, isLoading, activeId }) {
@@ -8,8 +9,9 @@ function ChatsList({ data, isLoading, activeId }) {
         <>
             {data?.length > 0 && data?.map(curr => {
                 return (
-                    <div key={curr.chat_id} className={activeId && activeId === curr.user_id ? "users-card-active users-card" : 'users-card'}  >
-                        <ChatCard data={curr} />
+                    <div key={curr.chat_id} className={activeId && activeId === curr.chat_id ? "users-card-active users-card" : 'users-card'}  >
+                        {curr.type === "private" && <ChatCard data={curr} />}
+                        {curr.type === "group" && <GroupCard data={curr} />}
                     </div>
                 )
             })}

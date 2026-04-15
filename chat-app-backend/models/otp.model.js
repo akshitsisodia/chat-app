@@ -2,7 +2,9 @@ const { pool } = require("../config/db");
 const { v4: uuidv4 } = require("uuid");
 
 const OtpModel = {
-  async create({ email, otp }) {
+  async create({ email, otp }, client) {
+    const executor = client || pool;
+
     const id = uuidv4();
 
     await pool.query(`DELETE FROM otp_codes WHERE email = $1`, [email]);
@@ -21,11 +23,13 @@ const OtpModel = {
 
     const values = [id, email, otp];
 
-    const { rows } = await pool.query(query, values);
+    const { rows } = await executor.query(query, values);
     return rows[0];
   },
 
-  async verifyOtp({ email, otp }) {
+  async verifyOtp({ email, otp }, client) {
+    const executor = client || pool;
+
     const query = `
     SELECT *
     FROM otp_codes
@@ -35,12 +39,14 @@ const OtpModel = {
     LIMIT 1;
   `;
 
-    const { rows } = await pool.query(query, [email, otp]);
+    const { rows } = await executor.query(query, [email, otp]);
 
     return rows[0];
   },
 
-  async updateOtpAttempts({ email }) {
+  async updateOtpAttempts({ email }, client) {
+    const executor = client || pool;
+
     const query = `
     UPDATE otp_codes
     SET attempts = attempts + 1
@@ -54,18 +60,20 @@ const OtpModel = {
     RETURNING attempts;
   `;
 
-    const { rows } = await pool.query(query, [email]);
+    const { rows } = await executor.query(query, [email]);
     return rows[0];
   },
 
-  async deleteOtp({ id }) {
+  async deleteOtp({ id }, client) {
+    const executor = client || pool;
+
     const query = `
     DELETE FROM otp_codes
     WHERE id = $1
     RETURNING id;
     `;
 
-    const { rows } = await pool.query(query, [id]);
+    const { rows } = await executor.query(query, [id]);
     return rows[0];
   },
 };

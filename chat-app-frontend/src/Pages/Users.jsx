@@ -4,7 +4,7 @@ import SearchUsers from '../Components/ui/SearchUsers';
 function Users() {
   return (
     <Layout>
-      <SearchUsers/>
+      <SearchUsers heading={"Find Users"} />
     </Layout>
   )
 }
