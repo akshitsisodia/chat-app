@@ -129,7 +129,9 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
   await ChatModel.updateChat(chatId);
 
   getIO()
+    .to(chatId)
     .to(senderId)
+    .to(receiverIds)
     .emit("newMessage", {
       ...message,
       unread_count: 0,
@@ -137,20 +139,20 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
     });
 
   // send to receivers
-  if (chat.type === "private") {
-    receiverIds.forEach((receiverId) => {
-      const userUnread =
-        unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
+  // if (chat.type === "private") {
+  //   receiverIds.forEach((receiverId) => {
+  //     const userUnread =
+  //       unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
 
-      getIO()
-        .to(receiverId)
-        .emit("newMessage", {
-          ...message,
-          unread_count: userUnread,
-          files: files_data,
-        });
-    });
-  }
+  //     getIO()
+  //       .to(receiverId)
+  //       .emit("newMessage", {
+  //         ...message,
+  //         unread_count: userUnread,
+  //         files: files_data,
+  //       });
+  //   });
+  // }
 
   // getIO()
   //   .to(chat.id)

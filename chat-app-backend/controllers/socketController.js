@@ -61,24 +61,26 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
 
     // send to sender
     // io.to(chat.id).emit("newMessage", { ...message, unreadCounts });
-    io.to(senderId).emit("newMessage", {
-      ...message,
-      unread_count: 0,
-    });
+    io.to(chatId)
+      .to(senderId)
+      .to(receiverIds)
+      .emit("newMessage", {
+        ...message,
+        unread_count: 0,
+      });
 
     // send to receivers
-    if (chat.type === "private") {
-      receiverIds.forEach((receiverId) => {
-        const userUnread =
-          unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
+    // if (chat.type === "private") {
+    //   receiverIds.forEach((receiverId) => {
+    //     const userUnread =
+    //       unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
 
-        io.to(receiverId).emit("newMessage", {
-          ...message,
-          unread_count: userUnread,
-        });
-      });
-    }
-    
+    //     io.to(receiverId).emit("newMessage", {
+    //       ...message,
+    //       unread_count: userUnread,
+    //     });
+    //   });
+    // }
   } catch (error) {
     await client.query("ROLLBACK");
     console.log(error);
