@@ -47,30 +47,25 @@ function Chats({ activeId }) {
             queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
-                const updated = old.data.map(curr => {
+                let updatedChat = null;
+
+                const rest = old.data.filter(curr => {
                     if (curr.chat_id === message.chat_id) {
-                        const update = {
+                        updatedChat = {
                             ...curr,
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
                             unread_count: curr.unread_count + 1,
-
-                        }
-
-                        if (curr.user_id !== message.sender_id) {
-                            update.unread_count = message.unread_count;
-                        }
-
-                        return update;
+                        };
+                        return false;
                     }
-
-                    return curr
-                })
+                    return true;
+                });
 
                 return {
                     ...old,
-                    data: updated
+                    data: [updatedChat, ...rest],
                 };
             })
         }
@@ -79,6 +74,8 @@ function Chats({ activeId }) {
 
         return () => socket.off("newMessage", handler)
     }, [queryClient, activeId])
+
+
     useEffect(() => {
         const handler = (message) => {
             if (activeId) {
@@ -128,9 +125,14 @@ function Chats({ activeId }) {
                     return curr
                 })
 
+                updated.sort(
+                    (a, b) =>
+                        new Date(b.last_messsage_time) - new Date(a.last_messsage_time)
+                );
+
                 return {
                     ...old,
-                    data: updated
+                    data: updated,
                 };
             })
         }
