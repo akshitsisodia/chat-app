@@ -15,6 +15,9 @@ function GroupCard({ data }) {
 
             if (!key) {
                 console.warn("Key not ready yet");
+                if (data.unread_count > 0) {
+                    setContent("newMessage")
+                }
                 return;
             }
             if (!data?.last_message) {
@@ -22,7 +25,7 @@ function GroupCard({ data }) {
             }
             const ciphertext = base64ToUint8Array(data?.last_message);
             const iv = base64ToUint8Array(data?.nonce);
-       
+
 
             try {
                 const text = await decryptGroupMessage(

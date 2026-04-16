@@ -5,12 +5,12 @@ import base64ToUint8Array from "../../Util/base64ToUint8Array";
 
 
 
-function GroupSendMessageCard({ chatId, message, nonce }) {
+function GroupSendMessageCard({ chatId, groupKey, message, nonce }) {
   const [content, setContent] = useState("");
 
   useEffect(() => {
     async function decryptMessage() {
-      const key = getCachedKey(chatId);
+      const key = getCachedKey(chatId) || groupKey;
 
       if (!key) {
         console.warn("Key not ready yet");

@@ -233,7 +233,6 @@ function SendMessageForm({ id, receiver, content, setContent }) {
             document.getElementById("preview").innerHTML = "";
             return
         }
-
         const { encrypted, nonce } = encryptMessage(content, localStorage.getItem("privateKey"), receiver?.public_key);
 
         const data = {

@@ -98,8 +98,6 @@ exports.register = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError("Please verify your email first", 400));
   }
 
-  console.log(new Date(user.verification_expires_at).getTime(), Date.now());
-
   if (
     !user.verification_expires_at ||
     new Date(user.verification_expires_at).getTime() < Date.now()

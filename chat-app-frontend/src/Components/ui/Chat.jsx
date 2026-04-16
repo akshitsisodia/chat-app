@@ -97,6 +97,27 @@ function Chat({ id }) {
                 };
             })
 
+            queryClient.setQueryData(["chats"], (old) => {
+                if (!old) return old;
+
+
+                const updated = old.data.map(curr => {
+                    if (curr.chat_id === id) {
+                        const update = {
+                            ...curr,
+                            unread_count: 0
+                        }
+                        return update;
+                    }
+                    return curr
+                })
+
+                return {
+                    ...old,
+                    data: updated
+                };
+            })
+
         }
         socket?.on("updateSeen", handler)
 

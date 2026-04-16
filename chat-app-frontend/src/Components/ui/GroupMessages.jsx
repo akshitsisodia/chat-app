@@ -16,6 +16,7 @@ function GroupMessages({ id, content, messages, receivers }) {
     const bottomRef = useRef(null);
 
     const [imageLink, setImageLink] = useState(null)
+    const [groupKey, setGroupKey] = useState(null)
 
     const { me } = useAuth();
     const { data } = useQuery({
@@ -61,6 +62,7 @@ function GroupMessages({ id, content, messages, receivers }) {
 
             // store
             setCachedKey(id, key);
+            setGroupKey(key)
 
             console.log("Group key ready");
         }
@@ -71,6 +73,8 @@ function GroupMessages({ id, content, messages, receivers }) {
     useEffect(() => {
         bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     }, [content, id]);
+
+
 
     return (
         <>
@@ -85,9 +89,9 @@ function GroupMessages({ id, content, messages, receivers }) {
 
                             {curr.content && <>
                                 {curr.sender_id === me.id ?
-                                    < GroupSendMessageCard chatId={id} nonce={curr?.nonce} message={curr?.content} />
+                                    < GroupSendMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} />
                                     :
-                                    <GroupReceiveMessageCard chatId={id} nonce={curr?.nonce} message={curr?.content} receiver={receiver[0]} />}
+                                    <GroupReceiveMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} receiver={receiver[0]} />}
                             </>}
                             {curr.sender_id === me.id && <FaCheck className="not-seen" color={curr.seen ? "#00d0ff" : "#00d0ff"} />}
 

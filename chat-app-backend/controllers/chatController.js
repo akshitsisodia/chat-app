@@ -10,6 +10,7 @@ const ChatMemberModel = require("../models/chatMember.model");
 const GroupKeyModel = require("../models/groupKey.model");
 const { encryptWithPublicKey } = require("../utils/encryptWithPublicKey");
 const { pool } = require("../config/db");
+const { validate: isUUID } = require("uuid");
 
 // exports.createGroup = asyncErrorHandler(async (req, res, next) => {
 //   const type = "group";
@@ -85,13 +86,16 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError("User ID required!", 400));
   }
 
-  if (!/^[0-9a-f-]{36}$/.test(receiverId)) {
+  if (!isUUID(receiverId)) {
     return next(new CustomError("Invalid ID format!", 400));
   }
 
   const receiver = await UserModel.findById(receiverId);
   if (!receiver) {
     return next(new CustomError("User not found!", 404));
+  }
+  if (senderId === receiverId) {
+    return next(new CustomError("Self Chat not allowed!", 400));
   }
 
   const pairKey =
@@ -105,6 +109,11 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
   // 2. create if not exists
   if (!chat) {
     try {
+      const receiver = await UserModel.findById(receiverId);
+      if (!receiver) {
+        return next(new CustomError("User not found!", 404));
+      }
+
       chat = await ChatModel.create({
         type,
         name,
@@ -113,11 +122,18 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
         pair_key: pairKey,
       });
 
-      await ChatMemberModel.createMembers({
-        chatId: chat.id,
-        senderId,
-        receiverId,
-      });
+      if (senderId === receiverId) {
+        await ChatMemberModel.addMember({
+          chat_id: chat.id,
+          user_id: senderId,
+        });
+      } else {
+        await ChatMemberModel.createMembers({
+          chatId: chat.id,
+          senderId,
+          receiverId,
+        });
+      }
     } catch (err) {
       // race condition safe fallback
       chat = await ChatModel.findByPairKey(pairKey);
@@ -126,7 +142,7 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: chat,
+    data: chat.id,
   });
 });
 
@@ -166,7 +182,6 @@ exports.getUserGroups = asyncErrorHandler(async (req, res, next) => {
 exports.getGroupKeyHandler = asyncErrorHandler(async (req, res, next) => {
   const { chatId } = req.params;
   const userId = req.user.id;
-  console.log(chatId, userId);
 
   const key = await GroupKeyModel.getGroupKey({ chatId, userId });
 

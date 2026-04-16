@@ -77,7 +77,6 @@ function Register({ isNext, setNext, isContinue, setContinue, }) {
 
     // store privateKey
     localStorage.setItem("privateKey", privateKey);
-    console.log("Sending publicKey:", publicKey, publicKey.length);
 
     useRegisterMutation.mutate({
       email: localStorage.getItem("verificationEmail"),

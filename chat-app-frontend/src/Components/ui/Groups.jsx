@@ -10,19 +10,17 @@ import { getSocket } from "../../Lib/socket"
 import { useNavigate } from "react-router-dom"
 import { FaMagnifyingGlass } from "react-icons/fa6"
 import ChatsList from "../common/ChatsList"
+import { useChats } from "../../Context/ChatsContext"
 
 
 function Groups({ activeId }) {
+    let { chats, isLoading, error } = useChats();
     const queryClient = useQueryClient();
     const socket = getSocket();
     const navigate = useNavigate();
 
 
-    const { data, isLoading, error } = useQuery({
-        queryKey: ["groups"],
-        queryFn: getMyGroups,
-    })
-    const chats = data?.data ?? []
+    chats = chats?.filter(curr => curr.type === "group") ?? []
 
     useEffect(() => {
         const handler = (message) => {
@@ -46,10 +44,11 @@ function Groups({ activeId }) {
                 })
             }
 
-            queryClient.setQueryData(["groups"], (old) => {
+            queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
                 const updated = old.data.map(curr => {
+
                     if (curr.chat_id === message.chat_id) {
 
                         const update = {
@@ -57,12 +56,14 @@ function Groups({ activeId }) {
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
+                            unread_count: curr.unread_count + 1,
 
                         }
 
-                        if (curr.user_id === message.sender_id) {
-                            update.unread_count = message.unread_count;
-                        }
+
+                        // if (curr.chat_id === message.chat_id) {
+                        //     update.unread_count = message.unread_count;
+                        // }
 
                         return update;
                     }
@@ -76,16 +77,15 @@ function Groups({ activeId }) {
                 };
             })
         }
+        socket.on("groupMessage", handler)
 
-        socket.on("newMessage", handler)
-
-        return () => socket.off("newMessage", handler)
+        return () => socket.off("groupMessage", handler)
     }, [queryClient, activeId])
 
 
     useEffect(() => {
         const handler = (chat) => {
-            queryClient.setQueryData(["groups"], (old) => {
+            queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
                 const filtered = old.data.filter(c => c.chat_id != chat.chat_id);
@@ -107,7 +107,7 @@ function Groups({ activeId }) {
         <div className="chats">
             <h2 className="chats-heading">Groups</h2>
 
-            <div className="chats-buttons-container">
+            {/* <div className="chats-buttons-container">
                 <div className="chats-buttons">
                     <button type='button' className="chats-go-button chats-go-button-active">General <span style={{ color: "#ccc" }}>{chats.length}</span></button>
                     <button type='button' className="chats-go-button">Archive</button>
@@ -117,7 +117,7 @@ function Groups({ activeId }) {
             <button type="button" className="chats-search-button" onClick={() => navigate('/users')}>
                 <p>Search...</p>
                 <FaMagnifyingGlass className="chats-search-magnifying" />
-            </button>
+            </button> */}
 
             <div className="chat-Cards">
                 <ChatsList data={chats} activeId={activeId} />

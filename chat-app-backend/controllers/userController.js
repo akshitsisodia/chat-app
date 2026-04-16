@@ -9,7 +9,12 @@ exports.getAllUsers = asyncErrorHandler(async (req, res, next) => {
   const limit = Number(req?.query?.limit) || 10;
   const skip = (page - 1) * limit;
 
-  let users = await UserModel.findUsers({ search, limit, skip });
+  let users = await UserModel.findUsers({
+    search,
+    limit,
+    skip,
+    userId: req.user.id,
+  });
 
   const total = await UserModel.countUsers({ search });
 

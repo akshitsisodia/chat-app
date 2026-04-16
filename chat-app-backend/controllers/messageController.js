@@ -27,11 +27,16 @@ exports.getMessages = asyncErrorHandler(async (req, res, next) => {
   });
   const receiverIds = receivers.map((r) => r.user_id);
 
-  getIO().to(chatId).to(senderId).emit("updateSeen", { by: senderId });
+  getIO()
+    .to(chatId)
+    .to(receiverIds)
+    .to(senderId)
+    .emit("updateSeen", { by: senderId });
+
   // send to receivers
-  receiverIds.forEach((receiverId) => {
-    getIO().to(receiverId).emit("updateSeen", { by: senderId });
-  });
+  // receiverIds.forEach((receiverId) => {
+  //   getIO().to(receiverId).emit("updateSeen", { by: senderId });
+  // });
 
   res.status(200).json({
     status: "success",

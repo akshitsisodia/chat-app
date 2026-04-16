@@ -215,7 +215,7 @@ const UserModel = {
     return rows;
   },
 
-  async findUsers({ search, limit, skip }, client) {
+  async findUsers({ search, limit, skip, userId }, client) {
     const executor = client || pool;
 
     const query = `
@@ -232,10 +232,12 @@ const UserModel = {
         OR email ILIKE $1
         Or id = $2
       )
-    LIMIT $3 OFFSET $4      
+      AND id != $3
+
+    LIMIT $4 OFFSET $5      
     `;
 
-    const values = [`%${search}%`, Number(search) || null, limit, skip];
+    const values = [`%${search}%`, Number(search) || null, userId, limit, skip];
 
     const { rows } = await executor.query(query, values);
     return rows;

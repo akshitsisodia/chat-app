@@ -10,6 +10,7 @@ import UserGroups from './Pages/UserGroups'
 import UserGroupRoom from './Pages/UserGroupRoom'
 import CreateGroup from './Pages/CreateGroup'
 import ChatProfile from './Pages/ChatProfile'
+import UpdatePhoto from './Pages/UpdatePhoto'
 
 
 function App() {
@@ -19,6 +20,11 @@ function App() {
 
       <Route path='/auth' element={<Auth />} />
 
+      {/* <Route path='/update-photo' element={
+        <ProtectedRoute>
+          <UpdatePhoto />
+        </ProtectedRoute>
+      } /> */}
       <Route path='/' element={
         <ProtectedRoute>
           <PreviousChats />

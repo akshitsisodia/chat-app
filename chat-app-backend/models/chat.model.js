@@ -71,7 +71,7 @@ const ChatModel = {
 
     const { rows } = await executor.query(query, values);
 
-    return rows[0]?.id || null;
+    return rows[0] || null;
   },
 
   async findByPairKey(pair_key, client) {

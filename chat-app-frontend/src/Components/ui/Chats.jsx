@@ -18,8 +18,9 @@ function Chats({ activeId }) {
     const socket = getSocket();
     const navigate = useNavigate();
 
-    const { chats, isLoading, error } = useChats()
+    let { chats, isLoading, error } = useChats()
 
+    chats = chats.filter(curr => { return (curr.last_message !== null || curr?.type === 'group') })
 
     useEffect(() => {
         const handler = (message) => {
@@ -48,16 +49,16 @@ function Chats({ activeId }) {
 
                 const updated = old.data.map(curr => {
                     if (curr.chat_id === message.chat_id) {
-
                         const update = {
                             ...curr,
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
+                            unread_count: curr.unread_count + 1,
 
                         }
 
-                        if (curr.user_id === message.sender_id) {
+                        if (curr.user_id !== message.sender_id) {
                             update.unread_count = message.unread_count;
                         }
 
@@ -77,6 +78,65 @@ function Chats({ activeId }) {
         socket.on("newMessage", handler)
 
         return () => socket.off("newMessage", handler)
+    }, [queryClient, activeId])
+    useEffect(() => {
+        const handler = (message) => {
+            if (activeId) {
+                socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
+                queryClient.setQueryData(["messages", activeId], (oldData) => {
+                    if (!oldData) return oldData;
+
+                    return {
+                        ...oldData,
+                        pages: oldData.pages.map((page, index) => {
+                            if (index === 0) {
+                                return {
+                                    ...page,
+                                    data: [message, ...page.data],
+                                };
+                            }
+                            return page;
+                        }),
+                    };
+                })
+            }
+
+            queryClient.setQueryData(["chats"], (old) => {
+                if (!old) return old;
+
+                const updated = old.data.map(curr => {
+
+                    if (curr.chat_id === message.chat_id) {
+
+                        const update = {
+                            ...curr,
+                            last_message: message.content,
+                            last_messsage_time: message.created_at,
+                            nonce: message.nonce,
+                            unread_count: curr.unread_count + 1,
+
+                        }
+
+
+                        // if (curr.chat_id === message.chat_id) {
+                        //     update.unread_count = message.unread_count;
+                        // }
+
+                        return update;
+                    }
+
+                    return curr
+                })
+
+                return {
+                    ...old,
+                    data: updated
+                };
+            })
+        }
+        socket.on("groupMessage", handler)
+
+        return () => socket.off("groupMessage", handler)
     }, [queryClient, activeId])
 
 

@@ -12,12 +12,12 @@ function base64ToUint8Array(base64) {
 
     return bytes;
 }
-function GroupReceiveMessageCard({ chatId, message, nonce, receiver }) {
+function GroupReceiveMessageCard({ chatId, message, groupKey, nonce, receiver }) {
     const [content, setContent] = useState("");
 
     useEffect(() => {
         async function decryptMessage() {
-            const key = getCachedKey(chatId);
+            const key = getCachedKey(chatId) || groupKey;
 
             if (!key) {
                 console.warn("Key not ready yet");
@@ -42,10 +42,9 @@ function GroupReceiveMessageCard({ chatId, message, nonce, receiver }) {
 
         decryptMessage();
     }, [chatId, message, nonce]);
-    console.log
     return <>
         <div className="receiveMessageCard">
-            <span style={{fontSize:".7rem", fontWeight:600, color:"#aaa"}}>{receiver?.name}</span>
+            <span style={{ fontSize: ".7rem", fontWeight: 600, color: "#aaa" }}>{receiver?.name}</span>
             <p >{content || "..."}</p>
         </div>
     </>

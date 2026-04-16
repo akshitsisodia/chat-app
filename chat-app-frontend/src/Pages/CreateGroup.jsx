@@ -70,7 +70,7 @@ function CreateGroup() {
                     </div>
 
 
-                    <button type="submit" className="create-group-button">{createGroupMutation.isPending ? <p className="loader" /> : "Create"}</button>
+                    <button type="submit" className="create-group-button" disabled={createGroupMutation.isPending}>{createGroupMutation.isPending ? <p className="loader" /> : "Create"}</button>
                 </form>
             </div>
         </Layout>

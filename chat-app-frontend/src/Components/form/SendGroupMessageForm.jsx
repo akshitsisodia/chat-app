@@ -142,8 +142,6 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
             // Convert to blob for file like formate
             const encryptedBlob = new Blob([encryptedBuffer]);
 
-
-
             // Append encrypted data
             formData.append("files", encryptedBlob);
             formData.append("ivs", btoa(String.fromCharCode(...iv)));

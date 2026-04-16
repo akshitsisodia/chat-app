@@ -47,7 +47,7 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
       client,
     );
 
-    const unreadCounts = await ChatUnreads.createOrupdateUnreads(
+    await ChatUnreads.createOrupdateUnreads(
       {
         chatId,
         receiverIds,
@@ -55,32 +55,19 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
       client,
     );
 
-    await ChatModel.updateChat(chat.id, client);
+    await ChatModel.updateChat(chatId, client);
 
     await client.query("COMMIT");
 
+    const emitMessage = chat.type === "private" ? "newMessage" : "groupMessage";
+
     // send to sender
-    // io.to(chat.id).emit("newMessage", { ...message, unreadCounts });
-    io.to(chatId)
-      .to(senderId)
-      .to(receiverIds)
-      .emit("newMessage", {
-        ...message,
-        unread_count: 0,
-      });
+    io.to([senderId, ...receiverIds]).emit(emitMessage, message);
 
-    // send to receivers
-    // if (chat.type === "private") {
-    //   receiverIds.forEach((receiverId) => {
-    //     const userUnread =
-    //       unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
-
-    //     io.to(receiverId).emit("newMessage", {
-    //       ...message,
-    //       unread_count: userUnread,
-    //     });
-    //   });
-    // }
+    // // send to receivers
+    // receiverIds.forEach((receiverId) => {
+    //   io.to(receiverId).emit(emitMessage, message);
+    // });
   } catch (error) {
     await client.query("ROLLBACK");
     console.log(error);
@@ -99,6 +86,11 @@ exports.seenMessageHandler = (socket, io) => async (data) => {
     if (!chat) {
       return socket.emit("error", "Chat not found!");
     }
+    const receivers = await ChatMemberModel.findReceiversByChatId({
+      chatId,
+      senderId,
+    });
+    const receiverIds = receivers.map((r) => r.user_id);
 
     // seen logic
     await MessageSeenModel.markSeen({ chatId, senderId });
@@ -107,7 +99,9 @@ exports.seenMessageHandler = (socket, io) => async (data) => {
     await ChatUnreads.resetUnreads({ chatId, senderId });
 
     socket
-      .to([chatId, senderId, receiverId])
+      .to(chatId)
+      .to(senderId)
+      .to(receiverIds)
       .emit("updateSeen", "message seen");
   } catch (error) {
     console.log(error);
