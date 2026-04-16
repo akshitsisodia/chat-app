@@ -34,7 +34,7 @@ function GroupSendMessageCard({ chatId, groupKey, message, nonce }) {
     }
 
     decryptMessage();
-  }, [chatId, message, nonce]);
+  }, [chatId, message, nonce, groupKey]);
 
   return <p className="sendMessageCard">{content || "..."}</p>;
 }
