@@ -11,6 +11,10 @@ import { useNavigate } from "react-router-dom"
 import { FaMagnifyingGlass } from "react-icons/fa6"
 import ChatsList from "../common/ChatsList"
 import { useChats } from "../../Context/ChatsContext"
+import showNotification from "../../Util/showNotification"
+import { decryptMessage } from "../../Hooks/useEncryptMessage"
+import base64ToUint8Array from "../../Util/base64ToUint8Array"
+import { decryptGroupMessage } from "../../Util/crypto"
 
 
 function Chats({ activeId }) {
@@ -51,6 +55,7 @@ function Chats({ activeId }) {
 
                 const rest = old.data.filter(curr => {
                     if (curr.chat_id === message.chat_id) {
+
                         updatedChat = {
                             ...curr,
                             last_message: message.content,
@@ -58,6 +63,15 @@ function Chats({ activeId }) {
                             nonce: message.nonce,
                             unread_count: curr.unread_count + 1,
                         };
+
+                        if (!activeId) {
+                            let content
+                            if (curr?.last_message) {
+                                content = decryptMessage(curr?.last_message, curr?.nonce, curr?.public_key, localStorage.getItem("privateKey"));
+                            }
+
+                            showNotification({ ...message, last_message: content })
+                        }
                         return false;
                     }
                     return true;
@@ -77,7 +91,7 @@ function Chats({ activeId }) {
 
 
     useEffect(() => {
-        const handler = (message) => {
+        const handler = async (message) => {
             if (activeId) {
                 socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
                 queryClient.setQueryData(["messages", activeId], (oldData) => {
@@ -104,7 +118,6 @@ function Chats({ activeId }) {
                 const updated = old.data.map(curr => {
 
                     if (curr.chat_id === message.chat_id) {
-
                         const update = {
                             ...curr,
                             last_message: message.content,
@@ -113,11 +126,6 @@ function Chats({ activeId }) {
                             unread_count: curr.unread_count + 1,
 
                         }
-
-
-                        // if (curr.chat_id === message.chat_id) {
-                        //     update.unread_count = message.unread_count;
-                        // }
 
                         return update;
                     }
