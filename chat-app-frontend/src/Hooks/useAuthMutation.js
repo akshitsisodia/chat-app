@@ -17,13 +17,13 @@ export const getLoginMutation = ({ password, setPassword, setEmail }) => {
     mutationFn: loginUser,
     onSuccess: async (data) => {
       const user = data.data.data;
-      // const privateKey = await decryptPrivateKey(
-      //   user?.encrypted_private_key,
-      //   password,
-      //   user.salt,
-      //   user.iv,
-      // );
-      // localStorage.setItem("privateKey", privateKey);
+      const privateKey = await decryptPrivateKey(
+        user?.encrypted_private_key,
+        password,
+        user.salt,
+        user.iv,
+      );
+      localStorage.setItem("privateKey", privateKey);
       setPassword("");
       setEmail("");
       login();

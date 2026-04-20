@@ -158,23 +158,17 @@ export const CallProvider = ({ children }) => {
     const acceptCall = async () => {
         dispatch({ type: "ACCEPT" });
 
-        const stream = await getMedia();
+        const stream = await getMedia(state.callType === "video");
 
         myVideo.current.srcObject = stream;
 
         // add tracks
         stream.getTracks().forEach(track => {
-            pc.current.addTrack(track, stream);
-        });
-
-        // set handlers (ideally set once when pc is created)
-        pc.current.ontrack = (event) => {
-            if (remoteVideo.current) {
-                remoteVideo.current.srcObject = event.streams[0];
+            const exists = pc.current.getSenders().some(s => s.track === track);
+            if (!exists) {
+                pc.current.addTrack(track, stream);
             }
-        };
-
-
+        });
 
         pc.current.onicecandidate = (event) => {
             if (event.candidate) {
@@ -186,7 +180,7 @@ export const CallProvider = ({ children }) => {
         };
 
         // offer
-        await pc.current.setRemoteDescription(state?.offer);
+        await pc.current.setRemoteDescription(state.offer);
 
         // apply queued ICE
         for (const c of pendingCandidates.current) {
@@ -197,14 +191,6 @@ export const CallProvider = ({ children }) => {
 
         const answer = await pc.current.createAnswer();
         await pc.current.setLocalDescription(answer);
-
-        const stats = await pc.current.getStats();
-
-        // stats.forEach(report => {
-        //     if (report.type === "inbound-rtp" && report.kind === "video") {
-        //         console.log("Video packets received:", report.packetsReceived);
-        //     }
-        // })
 
         dispatch({ type: "CONNECTED" });
 
@@ -267,25 +253,57 @@ export const CallProvider = ({ children }) => {
     // ---- socket handlers ----
 
     const handleIce = async ({ candidate }) => {
-        if (state.status !== CALL_STATE.RINGING &&
-            state.status !== CALL_STATE.CONNECTING &&
-            state.status !== CALL_STATE.CONNECTED) {
-            return
-        }
+        // if (state.status !== CALL_STATE.RINGING &&
+        //     state.status !== CALL_STATE.CONNECTING &&
+        //     state.status !== CALL_STATE.CONNECTED) {
+        //     return
+        // }
         try {
+            if (!candidate) return; // ✅ ignore end-of-candidates
+
+
             if (pc.current.remoteDescription) {
                 await pc.current.addIceCandidate(candidate);
             } else {
                 pendingCandidates.current.push(candidate);
             }
         } catch (err) {
-            console.error(err);
+            console.error("ICE error:", err);
         }
     };
     const handleIncoming = async ({ from, user, offer, type }) => {
-        console.log("Works")
-        dispatch({ type: "INCOMING", peer: user, offer: offer, callType: type });
-    }
+        // 🔥 ALWAYS create fresh pc here
+        if (pc.current) {
+            try { pc.current.close(); } catch { }
+        }
+
+        pc.current = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
+
+        // set handlers ONCE here
+        pc.current.ontrack = (event) => {
+            if (remoteVideo.current) {
+                remoteVideo.current.srcObject = event.streams[0];
+            }
+        };
+
+        pc.current.onicecandidate = (event) => {
+            if (event.candidate) {
+                socket.emit("ice-candidate", {
+                    to: user.id,
+                    candidate: event.candidate,
+                });
+            }
+        };
+
+        dispatch({
+            type: "INCOMING",
+            peer: user,
+            offer,
+            callType: type
+        });
+    };
 
 
 
@@ -302,6 +320,7 @@ export const CallProvider = ({ children }) => {
             console.warn("PeerConnection is closed or missing");
             return;
         }
+
 
 
         try {
@@ -330,8 +349,6 @@ export const CallProvider = ({ children }) => {
             }
             // 4. Clear queue properly
             pendingCandidates.current.length = 0;
-
-            const stats = await pc.current.getStats();
 
             dispatch({ type: "CONNECTED" });
         } catch (err) {
@@ -412,6 +429,7 @@ export const CallProvider = ({ children }) => {
     //     }
     // }, [state.status]);
 
+
     return (
         <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall }}>
             {children}
@@ -420,12 +438,12 @@ export const CallProvider = ({ children }) => {
             {state.status === CALL_STATE.RINGING && <IncomingCall caller={state?.peer} isVideo={state?.callType === "video" ? true : false} acceptCall={acceptCall} rejectCall={rejectCall} />}
             {/* {state.status === CALL_STATE.CONNECTED && <VideoCallUI />} */}
 
-            {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING)
+            {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED)
                 &&
-                <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} />
+                <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} />
             }
 
-            {state.status === CALL_STATE.CONNECTED && <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={false} />}
+            {/* {state.status === CALL_STATE.CONNECTED && <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={false} />} */}
 
         </CallContext.Provider>
     );

@@ -2,7 +2,7 @@ import { decryptMessage } from "../../Hooks/useEncryptMessage"
 import "../../Styles/Cards.css"
 function SendMessageCard({ receiver, message, nonce }) {
     let content
-    // content  = decryptMessage(message, nonce, receiver?.public_key, localStorage.getItem("privateKey"))
+    content  = decryptMessage(message, nonce, receiver?.public_key, localStorage.getItem("privateKey"))
     return (
         <p className="sendMessageCard">
             {content}
