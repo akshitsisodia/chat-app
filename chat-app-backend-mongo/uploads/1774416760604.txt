@@ -1,6 +1,0 @@
-Backup Internet Connection Information
-
-Currently, I do not have a separate dedicated backup internet connection.
-
-In case of issues with my primary internet service, I can temporarily rely on mobile data or hotspot connectivity to stay online and communicate until the primary connection is restored.
-

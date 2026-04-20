@@ -77,9 +77,8 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
   }
 };
 
-exports.seenMessageHandler = (socket, io) => async (data) => {
+exports.seenMessageHandler = (socket, io) => async (chatId) => {
   try {
-    const { chatId, receiverId } = data;
     const senderId = socket.user.id;
 
     const chat = await ChatModel.findById(chatId);

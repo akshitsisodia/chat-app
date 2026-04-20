@@ -29,13 +29,13 @@
 .chatCard-content {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   align-items: start;
   width: 100%;
   height: 70px;
   box-sizing: border-box;
-  padding: 1.1rem 0;
-  padding-left: 0.6rem;
+  padding: 0 0.5rem;
+  margin: 0 0.3rem;
   border: none;
   background-color: transparent;
   overflow: hidden;
@@ -51,12 +51,16 @@
     color: #aaa;
   }
 }
+/* .chatCard-content:hover {
+  background-color: #00000014;
+} */
 
 .chatCard-detail {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   height: 35px;
+  min-width: 50px;
   align-items: end;
 
   & .chatCard-detail-time {
@@ -88,6 +92,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 1rem;
 }
 
 .user-list-select-button {

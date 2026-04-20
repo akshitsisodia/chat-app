@@ -18,7 +18,7 @@ export const getLoginMutation = ({ password, setPassword, setEmail }) => {
     onSuccess: async (data) => {
       const user = data.data.data;
       const privateKey = await decryptPrivateKey(
-        user.encrypted_private_key,
+        user?.encrypted_private_key,
         password,
         user.salt,
         user.iv,
@@ -32,7 +32,7 @@ export const getLoginMutation = ({ password, setPassword, setEmail }) => {
     },
     onError: (error) => {
       setPassword("");
-      },
+    },
   });
 };
 

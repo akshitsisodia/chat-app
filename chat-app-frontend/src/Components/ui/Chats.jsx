@@ -1,10 +1,9 @@
 import "../../Styles/Chats.css"
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 
 import NoChat from './NoChat'
 import Loading from './Loading'
-import { getPrevChats } from "../../Services/chatsApi"
 import { useEffect } from "react"
 import { getSocket } from "../../Lib/socket"
 import { useNavigate } from "react-router-dom"
@@ -13,156 +12,104 @@ import ChatsList from "../common/ChatsList"
 import { useChats } from "../../Context/ChatsContext"
 import showNotification from "../../Util/showNotification"
 import { decryptMessage } from "../../Hooks/useEncryptMessage"
-import base64ToUint8Array from "../../Util/base64ToUint8Array"
-import { decryptGroupMessage } from "../../Util/crypto"
+import { useAuth } from "../../Context/AuthContext"
+import { useSocket } from "../../Context/SocketContext"
 
 
 function Chats({ activeId }) {
+    const { me } = useAuth();
+    const { socket } = useSocket();
     const queryClient = useQueryClient();
-    const socket = getSocket();
     const navigate = useNavigate();
 
     let { chats, isLoading, error } = useChats()
 
     chats = chats.filter(curr => { return (curr.last_message !== null || curr?.type === 'group') })
 
-    useEffect(() => {
-        const handler = (message) => {
-            if (activeId) {
-                socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
-                queryClient.setQueryData(["messages", activeId], (oldData) => {
-                    if (!oldData) return oldData;
-
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page, index) => {
-                            if (index === 0) {
-                                return {
-                                    ...page,
-                                    data: [message, ...page.data],
-                                };
-                            }
-                            return page;
-                        }),
-                    };
-                })
-            }
-
-            queryClient.setQueryData(["chats"], (old) => {
-                if (!old) return old;
-
-                let updatedChat = null;
-
-                const rest = old.data.filter(curr => {
-                    if (curr.chat_id === message.chat_id) {
-
-                        updatedChat = {
-                            ...curr,
-                            last_message: message.content,
-                            last_messsage_time: message.created_at,
-                            nonce: message.nonce,
-                            unread_count: curr.unread_count + 1,
-                        };
-
-                        if (!activeId) {
-                            let content
-                            if (curr?.last_message) {
-                                content = decryptMessage(curr?.last_message, curr?.nonce, curr?.public_key, localStorage.getItem("privateKey"));
-                            }
-
-                            showNotification({ ...message, last_message: content })
-                        }
-                        return false;
-                    }
-                    return true;
-                });
+    const newMessagehandler = (message) => {
+        if (activeId) {
+            socket.emit("seenMessage", message.chat_id)
+            queryClient.setQueryData(["messages", activeId], (oldData) => {
+                if (!oldData) return oldData;
 
                 return {
-                    ...old,
-                    data: [updatedChat, ...rest],
+                    ...oldData,
+                    pages: oldData.pages.map((page, index) => {
+                        if (index === 0) {
+                            return {
+                                ...page,
+                                data: [message, ...page.data],
+                            };
+                        }
+                        return page;
+                    }),
                 };
             })
         }
 
-        socket.on("newMessage", handler)
+        queryClient.setQueryData(["chats"], (old) => {
+            if (!old) return old;
 
-        return () => socket.off("newMessage", handler)
-    }, [queryClient, activeId])
+            let updatedChat = null;
 
-
-    useEffect(() => {
-        const handler = async (message) => {
-            if (activeId) {
-                socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
-                queryClient.setQueryData(["messages", activeId], (oldData) => {
-                    if (!oldData) return oldData;
-
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page, index) => {
-                            if (index === 0) {
-                                return {
-                                    ...page,
-                                    data: [message, ...page.data],
-                                };
-                            }
-                            return page;
-                        }),
+            const rest = old.data.filter(curr => {
+                if (curr.chat_id === message.chat_id) {
+                    updatedChat = {
+                        ...curr,
+                        last_message: message.content,
+                        last_messsage_time: message.created_at,
+                        nonce: message.nonce,
+                        unread_count: curr.unread_count + 1,
                     };
-                })
-            }
 
-            queryClient.setQueryData(["chats"], (old) => {
-                if (!old) return old;
-
-                const updated = old.data.map(curr => {
-
-                    if (curr.chat_id === message.chat_id) {
-                        const update = {
-                            ...curr,
-                            last_message: message.content,
-                            last_messsage_time: message.created_at,
-                            nonce: message.nonce,
-                            unread_count: curr.unread_count + 1,
-
-                        }
-
-                        return update;
+                    if (me.id === message.sender_id) {
+                        updatedChat.unread_count = 0;
                     }
 
-                    return curr
-                })
+                    if (!activeId && curr.type === "private") {
+                        let content
+                        if (curr?.last_message) {
+                            content = decryptMessage(curr?.last_message, curr?.nonce, curr?.public_key, localStorage.getItem("privateKey"));
+                        }
 
-                updated.sort(
-                    (a, b) =>
-                        new Date(b.last_messsage_time) - new Date(a.last_messsage_time)
-                );
+                        showNotification({ ...message, last_message: content })
+                    }
+                    return false;
+                }
+                return true;
+            });
 
-                return {
-                    ...old,
-                    data: updated,
-                };
-            })
-        }
-        socket.on("groupMessage", handler)
+            return {
+                ...old,
+                data: [updatedChat, ...rest],
+            };
+        })
+    }
+    const handler = (chat) => {
+        queryClient.setQueryData(["chats"], (old) => {
+            if (!old) return old;
 
-        return () => socket.off("groupMessage", handler)
-    }, [queryClient, activeId])
+            const filtered = old.data.filter(c => c.chat_id != chat.chat_id);
+
+            return {
+                ...old,
+                data: [chat, ...filtered]
+            };
+        })
+    }
+
+    useEffect(() => {
+        const events = ["newMessage", "groupMessage"];
+
+        events.forEach(event => socket.on(event, newMessagehandler));
+
+        return () => {
+            events.forEach(event => socket.off(event, newMessagehandler));
+        };
+    }, [queryClient, activeId]);
 
 
     useEffect(() => {
-        const handler = (chat) => {
-            queryClient.setQueryData(["chats"], (old) => {
-                if (!old) return old;
-
-                const filtered = old.data.filter(c => c.chat_id != chat.chat_id);
-
-                return {
-                    ...old,
-                    data: [chat, ...filtered]
-                };
-            })
-        }
         socket.on("newChat", handler)
         return () => socket.off("newChat", handler)
     }, [queryClient])

@@ -6,24 +6,94 @@ import NoChat from './NoChat'
 import Loading from './Loading'
 import { useEffect } from "react"
 import { getSocket } from "../../Lib/socket"
+import { useNavigate } from "react-router-dom"
+import { FaMagnifyingGlass } from "react-icons/fa6"
 import ChatsList from "../common/ChatsList"
 import { useChats } from "../../Context/ChatsContext"
-import { useAuth } from "../../Context/AuthContext"
+import showNotification from "../../Util/showNotification"
+import { decryptMessage } from "../../Hooks/useEncryptMessage"
 
 
-function Groups({ activeId }) {
-    const { me } = useAuth();
-    let { chats, isLoading, error } = useChats();
+function Chats({ activeId }) {
     const queryClient = useQueryClient();
     const socket = getSocket();
+    const navigate = useNavigate();
 
+    let { chats, isLoading, error } = useChats()
 
-    chats = chats?.filter(curr => curr.type === "group") ?? []
+    chats = chats.filter(curr => { return (curr.last_message !== null || curr?.type === 'group') })
 
     useEffect(() => {
         const handler = (message) => {
             if (activeId) {
-                socket.emit("seenMessage", message.chat_id)
+                socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
+                queryClient.setQueryData(["messages", activeId], (oldData) => {
+                    if (!oldData) return oldData;
+
+                    return {
+                        ...oldData,
+                        pages: oldData.pages.map((page, index) => {
+                            if (index === 0) {
+                                return {
+                                    ...page,
+                                    data: [message, ...page.data],
+                                };
+                            }
+                            return page;
+                        }),
+                    };
+                })
+            }
+
+            queryClient.setQueryData(["chats"], (old) => {
+                if (!old) return old;
+
+                let updatedChat = null;
+
+                const rest = old.data.filter(curr => {
+                    if (curr.chat_id === message.chat_id) {
+                        updatedChat = {
+                            ...curr,
+                            last_message: message.content,
+                            last_messsage_time: message.created_at,
+                            nonce: message.nonce,
+                            unread_count: curr.unread_count + 1,
+                        };
+
+                        if (curr.user_id !== message.sender_id) {
+                            updatedChat.unread_count = 0;
+                        }
+
+                        if (!activeId) {
+                            let content
+                            if (curr?.last_message) {
+                                content = decryptMessage(curr?.last_message, curr?.nonce, curr?.public_key, localStorage.getItem("privateKey"));
+                            }
+
+                            showNotification({ ...message, last_message: content })
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+
+                return {
+                    ...old,
+                    data: [updatedChat, ...rest],
+                };
+            })
+        }
+
+        socket.on("newMessage", handler)
+
+        return () => socket.off("newMessage", handler)
+    }, [queryClient, activeId])
+
+
+    useEffect(() => {
+        const handler = async (message) => {
+            if (activeId) {
+                socket.emit("seenMessage", { chatId: message.chat_id, receiverId: activeId })
                 queryClient.setQueryData(["messages", activeId], (oldData) => {
                     if (!oldData) return oldData;
 
@@ -48,18 +118,12 @@ function Groups({ activeId }) {
                 const updated = old.data.map(curr => {
 
                     if (curr.chat_id === message.chat_id) {
-
                         const update = {
                             ...curr,
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
                             unread_count: curr.unread_count + 1,
-
-                        }
-
-                        if (me.id === message.sender_id) {
-                            update.unread_count = 0;
                         }
 
                         return update;
@@ -68,9 +132,14 @@ function Groups({ activeId }) {
                     return curr
                 })
 
+                updated.sort(
+                    (a, b) =>
+                        new Date(b.last_messsage_time) - new Date(a.last_messsage_time)
+                );
+
                 return {
                     ...old,
-                    data: updated
+                    data: updated,
                 };
             })
         }
@@ -102,9 +171,9 @@ function Groups({ activeId }) {
     if (isLoading) return <Loading />
     return (
         <div className="chats">
-            <h2 className="chats-heading">Groups</h2>
+            <h2 className="chats-heading">Messages</h2>
 
-            {/* <div className="chats-buttons-container">
+            <div className="chats-buttons-container">
                 <div className="chats-buttons">
                     <button type='button' className="chats-go-button chats-go-button-active">General <span style={{ color: "#ccc" }}>{chats.length}</span></button>
                     <button type='button' className="chats-go-button">Archive</button>
@@ -114,7 +183,7 @@ function Groups({ activeId }) {
             <button type="button" className="chats-search-button" onClick={() => navigate('/users')}>
                 <p>Search...</p>
                 <FaMagnifyingGlass className="chats-search-magnifying" />
-            </button> */}
+            </button>
 
             <div className="chat-Cards">
                 <ChatsList data={chats} activeId={activeId} />
@@ -123,4 +192,4 @@ function Groups({ activeId }) {
     )
 }
 
-export default Groups
+export default Chats

@@ -58,6 +58,38 @@ const initSocket = (server) => {
 
     socket.on("seenMessage", seenMessageHandler(socket, io));
 
+    //! for Streaming
+    // connect users
+    socket.on("ice-candidate", ({ to, candidate }) => {
+      io.to(to).emit("ice-candidate", { candidate });
+    });
+
+    // receive call request
+    socket.on("call-user", ({ to, offer, type }) => {
+      io.to(to).emit("incoming-call", {
+        from: socket.id,
+        user: socket.user,
+        offer,
+        type,
+      });
+    });
+
+    // send Answer to caller
+    socket.on("answer-call", ({ to, answer }) => {
+      io.to(to).emit("call-accepted", { answer });
+    });
+
+    // send reject to caller
+    socket.on("reject-call", ({ to }) => {
+      io.to(to).emit("call-rejected");
+    });
+
+    // end call
+    socket.on("end-call", ({ to }) => {
+      io.to(to).emit("end-call");
+    });
+
+    //! for Streaming
     socket.on("disconnect", () => {
       console.log(`${socket?.user?.name} disconnected:`, socket.id);
     });

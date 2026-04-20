@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect } from 'react'
 import { getMe } from '../Services/userAPI'
 import { useNavigate } from 'react-router-dom'
 import { logoutUser } from '../Services/authAPI'
-import { connectSocket, getSocket } from '../Lib/socket'
+// import { connectSocket } from '../Lib/socket'
 import { getLogoutMutation } from '../Hooks/useAuthMutation'
 
 const AuthContext = createContext()
@@ -21,14 +21,14 @@ export const AuthProvider = ({ children }) => {
 
     const me = data?.data ?? undefined
 
-    useEffect(() => {
-        connectSocket();
-    }, [])
+    // useEffect(() => {
+    //     connectSocket();
+    // }, [])
 
     const login = async () => {
-        await queryClient.refetchQueries({ queryKey: ["me"] })
-        connectSocket();
         navigate("/")
+        await queryClient.refetchQueries({ queryKey: ["me"] })
+        // connectSocket();
     }
 
 

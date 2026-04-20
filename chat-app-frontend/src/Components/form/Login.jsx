@@ -20,6 +20,12 @@ function Login() {
     })
   }
 
+  function enableMedia() {
+    if ("vibrate" in navigator) {
+      navigator.vibrate(1); // tiny vibration to unlock permission
+    }
+  }
+
   return (
 
 
@@ -34,7 +40,7 @@ function Login() {
       <input name='password' type="password" value={password} onChange={e => setPassword(e.target.value)} className="auth-password-input" placeholder='Enter your password' required />
 
       <p className='formError'>{useLoginMutation?.failureReason?.response?.data?.message}</p>
-      <button type='submit' className="auth-login-button">Sign in</button>
+      <button type='submit' className="auth-login-button" disabled={useLoginMutation.isPending}>{useLoginMutation.isPending ? <p className='loader' /> : "Sign in"}</button>
     </form>
 
 

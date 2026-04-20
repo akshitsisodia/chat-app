@@ -7,11 +7,14 @@ import SendMessageForm from "../form/SendMessageForm";
 import { useEffect, useRef, useState } from "react";
 import { getPrivateMessage } from "../../Services/MessageAPI";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { getSocket } from "../../Lib/socket";
+import { FaPhone, FaPhoneAlt, FaVideo } from "react-icons/fa";
+import { useCall } from "../../Context/CallContext";
+import { useSocket } from "../../Context/SocketContext";
 
 function Chat({ id }) {
+    const { callUser } = useCall()
+    const { socket } = useSocket();
     const queryClient = useQueryClient();
-    const socket = getSocket();
 
     const [content, setContent] = useState("")
     const [scroll, setScroll] = useState(true);
@@ -96,7 +99,6 @@ function Chat({ id }) {
                     }),
                 };
             })
-
             queryClient.setQueryData(["chats"], (old) => {
                 if (!old) return old;
 
@@ -117,30 +119,30 @@ function Chat({ id }) {
                     data: updated
                 };
             })
-
         }
         socket?.on("updateSeen", handler)
 
         return () => socket.off("updateSeen", handler)
     }, [queryClient, id])
 
+
+
     return (
         <div className="chat">
             {/* head  */}
             <div className="chat-top">
                 <ButtonGoBack />
-
                 <UserCard receiver={receivers[0]} chatId={id}>
-                    {/* <FaEllipsisV /> */}
+                    {/* <VideoCall socket={socket} userId={receivers[0]?.user_id} /> */}
                 </UserCard>
+                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt color="var(--primary-color)" /></button>
+                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo color="var(--primary-color)" /></button>
             </div>
 
             {/* main  */}
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>
                 <Messages receiver={receivers[0]} id={id} content={content} messages={messages} />
                 {isFetchingNextPage || !scroll && <div className="loader"></div>}
-                {/* <br /> */}
-                {/* {messages.length < 20 && <ProfileUserDetails user={receiver} />} */}
             </div>
 
             {/* input  */}

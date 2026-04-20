@@ -15,9 +15,13 @@ const globalErrorHandler = require("./controllers/errorController");
 
 // uploads
 const upload = require("./config/multer");
-const { multiUploadHandler, handleUpload } = require("./controllers/uploadController");
+const {
+  multiUploadHandler,
+  handleUpload,
+} = require("./controllers/uploadController");
 
 const app = express();
+
 app.use(
   cors({
     origin: process.env.ORIGIN,
@@ -43,7 +47,7 @@ if (process.env.NODE_ENV !== "production") {
 app.post(
   "/api/v0/uploads/:id",
   protect,
-  handleUpload({field:"files",type:"array",maxCount:5}),
+  handleUpload({ field: "files", type: "array", maxCount: 5 }),
   multiUploadHandler,
 ); // max 5 files
 

@@ -11,7 +11,6 @@ import UserGroupRoom from './Pages/UserGroupRoom'
 import CreateGroup from './Pages/CreateGroup'
 import ChatProfile from './Pages/ChatProfile'
 import UpdatePhoto from './Pages/UpdatePhoto'
-import VideoCall from './Components/ui/VideoCall'
 
 
 function App() {
@@ -26,7 +25,7 @@ function App() {
           <UpdatePhoto />
         </ProtectedRoute>
       } /> */}
-
+      
       <Route path='/' element={
         <ProtectedRoute>
           <PreviousChats />

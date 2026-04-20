@@ -8,10 +8,14 @@ import { FaCheck, FaCheckDouble } from "react-icons/fa6";
 function ChatCard({ data }) {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const privateKey = localStorage.getItem("privateKey")
+    if (!privateKey) {
+        return
+    }
 
     let content
     if (data?.last_message) {
-        content = decryptMessage(data?.last_message, data?.nonce, data?.public_key, localStorage.getItem("privateKey"));
+        content = decryptMessage(data?.last_message, data?.nonce, data?.public_key, privateKey);
     }
 
     const imageClickedHandler = () => {
@@ -22,7 +26,7 @@ function ChatCard({ data }) {
         navigate(`/${data.chat_id}`)
 
     }
-
+    console.log(data)
     const date = new Date(data.last_message_time);
     const now = Date.now();
 

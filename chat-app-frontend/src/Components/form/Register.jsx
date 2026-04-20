@@ -99,7 +99,7 @@ function Register({ isNext, setNext, isContinue, setContinue, }) {
           <label htmlFor="email">Email<span>*</span></label>
           <input name='email' type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="auth-email-input" placeholder='Enter your email address' required />
           <p className='formError'>{useOtpMutation?.failureReason?.response?.data?.message}</p>
-          <button type='submit' className="auth-login-button">{useOtpMutation.isPending ? <div className="loader"></div> : "Next"}<FaArrowRight /></button>
+          <button type='submit' className="auth-login-button" disabled={useOtpMutation.isPending}>{useOtpMutation.isPending ? <div className="loader"></div> : <span>Next <FaArrowRight /></span>}</button>
         </form>
 
       }
@@ -120,7 +120,7 @@ function Register({ isNext, setNext, isContinue, setContinue, }) {
 
           <p className="auth-sub-greetings">OTP is valid for two minutes.</p>
 
-          <button type='submit' className="auth-login-button" >{useVerifyMutation.isPending ? <div className="loader"></div> : "Verify"}<FaArrowRight /></button>
+          <button type='submit' className="auth-login-button" disabled={useVerifyMutation.isPending}>{useVerifyMutation.isPending ? <div className="loader"></div> : <span>Verify <FaArrowRight /></span>}</button>
         </form>
       </>}
 
@@ -140,7 +140,7 @@ function Register({ isNext, setNext, isContinue, setContinue, }) {
           <p className='formError'>{useRegisterMutation?.failureReason?.response?.data?.message}</p>
 
           <div className="flex">
-            <button type='submit' className="auth-login-button">{useRegisterMutation.isPending ? <div className="loader"></div> : "Continue"}<FaArrowRight /></button>
+            <button type='submit' className="auth-login-button" disabled={useRegisterMutation.isPending}>{useRegisterMutation.isPending ? <div className="loader"></div> : <span>Continue <FaArrowRight /></span>}</button>
           </div>
         </form>
       </>}
