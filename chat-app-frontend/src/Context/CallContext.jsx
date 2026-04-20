@@ -283,6 +283,7 @@ export const CallProvider = ({ children }) => {
         }
     };
     const handleIncoming = async ({ from, user, offer, type }) => {
+        console.log("Works")
         dispatch({ type: "INCOMING", peer: user, offer: offer, callType: type });
     }
 

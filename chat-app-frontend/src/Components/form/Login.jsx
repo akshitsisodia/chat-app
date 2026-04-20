@@ -8,7 +8,7 @@ function Login() {
 
   const useLoginMutation = getLoginMutation({ password, setPassword, setEmail });
 
-  if (useLoginMutation?.error) console.log(useLoginMutation?.failureReason?.response?.data?.message)
+  if (useLoginMutation?.error) console.log(useLoginMutation?.failureReason?.response?.data?.message, useLoginMutation.error)
 
 
 
