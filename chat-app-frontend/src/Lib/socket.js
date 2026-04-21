@@ -10,6 +10,7 @@ export const connectSocket = (token) => {
   if (!socket) {
     socket = io(api, {
       autoConnect: false,
+      transports: ["websocket"],
       withCredentials: true,
     });
 
