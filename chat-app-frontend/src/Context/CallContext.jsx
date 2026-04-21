@@ -62,7 +62,7 @@ export const CallProvider = ({ children }) => {
     const myVideo = useRef(null);
     const remoteVideo = useRef(null);
     const [isMuted, setIsMuted] = useState(false);
-    // const [isMuted, setIsMuted] = useState(false);
+    const [isVideo, setIsVideo] = useState(false);
 
     const pendingCandidates = useRef([]);
 
@@ -215,6 +215,15 @@ export const CallProvider = ({ children }) => {
             if (audioTrack) {
                 audioTrack.enabled = isMuted;
                 setIsMuted(!isMuted);
+            }
+        }
+    };
+    const toggleVideo = () => {
+        if (localStream.current) {
+            const videotrack = localStream.current.getVideoTracks()[0];
+            if (videotrack) {
+                videotrack.enabled = isVideo;
+                setIsVideo(!isVideo);
             }
         }
     };
@@ -445,7 +454,7 @@ export const CallProvider = ({ children }) => {
 
 
     return (
-        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteVideo, isMuted, toggleMute }}>
+        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteVideo, isMuted, toggleMute, isVideo, toggleVideo }}>
             {children}
 
             {/* GLOBAL UI */}
@@ -454,7 +463,7 @@ export const CallProvider = ({ children }) => {
 
             {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED)
                 &&
-                <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} isVideo={state?.callType === "video" ? true : false} />
+                <CallingScreen isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} isVideoCall={state?.callType === "video" ? true : false} />
             }
 
         </CallContext.Provider>

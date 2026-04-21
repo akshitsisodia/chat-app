@@ -1,7 +1,9 @@
 import React from 'react'
 import { FaPhone, FaPhoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa'
+import { useCall } from '../../Context/CallContext'
 
-function IncomingCall({ caller, isVideo = false, acceptCall, rejectCall }) {
+function IncomingCall({ caller, isVideo = false }) {
+    const { acceptCall, rejectCall } = useCall()
     return (
         <div className="incoming-call">
             <div className="incomong-call-user">
