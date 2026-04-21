@@ -5,10 +5,10 @@ import "../../Styles/Form.css"
 import { useEffect, useRef, useState } from "react";
 import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPause, FaPlus, FaVideo } from "react-icons/fa";
 import { useUploadMutation } from "../../Hooks/useMutation";
-import { getSocket } from "../../Lib/socket";
 import { encryptGroupMessage } from "../../Util/crypto";
 import { getCachedKey } from "../../Util/CachesKeyMap";
 import { getGroupKeys } from "../../Services/chatsApi";
+import { useSocket } from "../../Context/SocketContext";
 
 function uint8ArrayToBase64(arr) {
     return btoa(String.fromCharCode(...arr));
@@ -16,7 +16,7 @@ function uint8ArrayToBase64(arr) {
 
 function SendGroupMessageForm({ id, receiver, content, setContent }) {
 
-    const socket = getSocket()
+    const { socket } = useSocket()
     const [openFiles, setOpenFiles] = useState(false);
     const [files, setFiles] = useState(null);
     const [startRecord, setStartRecord] = useState(false);

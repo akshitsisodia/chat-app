@@ -1,22 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext';
-import { connectSocket, getSocket } from '../Lib/socket';
+import { connectSocket, disconnectSocket, getSocket } from '../Lib/socket';
 
 const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
     const { me } = useAuth();
-    const [socket, setSocket] = useState(getSocket())
-    useEffect(() => {
-        if (!me) return;
+    const [socket, setSocket] = useState(null)
 
-        const s = connectSocket();
+    useEffect(() => {
+        if (!me) {
+            disconnectSocket();
+            setSocket(null);
+            return;
+        }
+
+        const s = connectSocket(me.token);
         setSocket(s);
 
-        return () => {
-            s.disconnect();
-        };
-    }, [me])
+    }, [me]);
 
     return (
         <SocketContext.Provider value={{ socket }}>

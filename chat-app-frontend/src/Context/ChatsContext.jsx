@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
 import { getPrevChats } from "../Services/chatsApi";
+import { useAuth } from "./AuthContext";
 
 
 const ChatsContext = createContext({
@@ -10,18 +11,19 @@ const ChatsContext = createContext({
 });
 
 export const ChatsProvider = ({ children }) => {
+    const { me } = useAuth();
     const { data, isLoading, error } = useQuery({
         queryKey: ["chats"],
         queryFn: getPrevChats,
+        enabled: !!me
     })
-    const chats = data?.data ?? []
+    const chats = me ? (data?.data ?? []) : [];
 
     const value = useMemo(() => ({
         chats,
         isLoading,
         error,
     }), [chats, isLoading, error]);
-
 
     return (
         <ChatsContext.Provider value={value}>

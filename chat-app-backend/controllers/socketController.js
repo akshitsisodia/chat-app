@@ -64,10 +64,6 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
     // send to sender
     io.to([senderId, ...receiverIds]).emit(emitMessage, message);
 
-    // // send to receivers
-    // receiverIds.forEach((receiverId) => {
-    //   io.to(receiverId).emit(emitMessage, message);
-    // });
   } catch (error) {
     await client.query("ROLLBACK");
     console.log(error);

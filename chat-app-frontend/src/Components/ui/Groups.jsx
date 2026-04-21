@@ -9,13 +9,14 @@ import { getSocket } from "../../Lib/socket"
 import ChatsList from "../common/ChatsList"
 import { useChats } from "../../Context/ChatsContext"
 import { useAuth } from "../../Context/AuthContext"
+import { useSocket } from "../../Context/SocketContext"
 
 
 function Groups({ activeId }) {
     const { me } = useAuth();
     let { chats, isLoading, error } = useChats();
     const queryClient = useQueryClient();
-    const socket = getSocket();
+    const { socket } = useSocket();
 
 
     chats = chats?.filter(curr => curr.type === "group") ?? []

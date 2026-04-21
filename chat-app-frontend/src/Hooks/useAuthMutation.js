@@ -8,7 +8,7 @@ import {
 } from "../Services/authAPI";
 import { useAuth } from "../Context/AuthContext";
 import { decryptPrivateKey } from "./usePrivateKeyEncryption";
-import { getSocket } from "../Lib/socket";
+import { disconnectSocket, getSocket } from "../Lib/socket";
 
 export const getLoginMutation = ({ password, setPassword, setEmail }) => {
   const { login } = useAuth();
@@ -73,11 +73,8 @@ export const getLogoutMutation = () => {
   return useMutation({
     mutationFn: logoutUser,
     onSuccess: async () => {
-      getSocket().disconnect();
-
-      queryClient.setQueryData(["me"], null);
-      queryClient.removeQueries(["me"]);
-
+      disconnectSocket();
+      queryClient.clear();
       localStorage.clear();
       navigate("/auth");
     },

@@ -11,67 +11,19 @@ const GroupKeyModel = require("../models/groupKey.model");
 const { encryptWithPublicKey } = require("../utils/encryptWithPublicKey");
 const { pool } = require("../config/db");
 const { validate: isUUID } = require("uuid");
+const { getIO } = require("../config/socket");
 
-// exports.createGroup = asyncErrorHandler(async (req, res, next) => {
-//   const type = "group";
-//   const name = req?.body?.name || "My-Group";
-//   const created_by = req.user.id;
-//   const pair_key = null;
-//   let photoUrl = "https://clipground.com/images/group-icon-png-7.jpg";
-//   let memberIds = [];
-
-//   try {
-//     memberIds = JSON.parse(req.body.members || "[]");
-//   } catch (err) {
-//     return next(new CustomError("Invalid members format!", 400));
-//   }
-
-//   // add creator safely
-//   memberIds = [...new Set([...memberIds, req.user.id])];
-
-//   if (!Array.isArray(memberIds) || memberIds.length === 0) {
-//     return next(new CustomError("Members required!", 400));
-//   }
-
-//   // upload group photo to cloudinary
-//   if (req.file) {
-//     try {
-//       const result = await cloudinary.uploader.upload(req.file.path, {
-//         resource_type: "auto",
-//       });
-
-//       photoUrl = result.secure_url;
-//     } catch (error) {
-//       next(new CustomError(`File upload failed: ${error.message}`, 500));
-//     }
-
-//     try {
-//       await fs.unlink(req.file.path);
-//     } catch (error) {
-//       next(new CustomError(`File delete failed: ${error.message}`, 500));
-//     }
-//   }
-//   // end upload group photo to cloudinary
-
-//   const group = await ChatModel.create({
-//     type,
-//     name,
-//     photo: photoUrl,
-//     created_by,
-//     pair_key,
-//   });
-
-//   await ChatMemberModel.addMember({
-//     chat_id: group.id,
-//     user_id: req.user.id,
-//     role: "admin",
-//   });
-
-//   res.status(201).json({
-//     status: "success",
-//     data: group,
-//   });
-// });
+function sanitizeChat(chat, receiver) {
+  return {
+    chat_id: chat.id,
+    type: chat.type,
+    chat_name: receiver.name,
+    chat_photo: receiver.photo,
+    email: receiver.email,
+    public_key: receiver.public_key,
+    user_id: receiver.id,
+  };
+}
 
 exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
   const type = "private";
@@ -90,10 +42,6 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
     return next(new CustomError("Invalid ID format!", 400));
   }
 
-  const receiver = await UserModel.findById(receiverId);
-  if (!receiver) {
-    return next(new CustomError("User not found!", 404));
-  }
   if (senderId === receiverId) {
     return next(new CustomError("Self Chat not allowed!", 400));
   }
@@ -134,6 +82,10 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
           receiverId,
         });
       }
+      const newChatSender = sanitizeChat(chat, receiver);
+      getIO().to(senderId).emit("newChat", newChatSender);
+      const newChatReceiver = sanitizeChat(chat, req.user);
+      getIO().to(receiverId).emit("newChat", newChatReceiver);
     } catch (err) {
       // race condition safe fallback
       chat = await ChatModel.findByPairKey(pairKey);

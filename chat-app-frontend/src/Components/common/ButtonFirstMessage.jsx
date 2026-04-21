@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateChat } from '../../Services/chatsApi';
 import { useState } from 'react';
 
 function ButtonFirstMessage({ id, user, children }) {
+    const queryClient = useQueryClient();
     const navigate = useNavigate();
     const [clicked, setClicked] = useState(false);
 
@@ -17,7 +18,6 @@ function ButtonFirstMessage({ id, user, children }) {
     const buttonClickedHandler = async (e) => {
         const data = await getOrCreateChat({ id })
         navigate(`/${data?.data}`)
-
     }
     return (
         <button type='button' onClick={buttonClickedHandler} className="buttonFirstMessage">

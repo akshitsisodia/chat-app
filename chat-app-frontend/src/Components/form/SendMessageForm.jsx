@@ -5,13 +5,13 @@ import "../../Styles/Form.css"
 import { useEffect, useRef, useState } from "react";
 import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPause, FaPlus, FaVideo } from "react-icons/fa";
 import { useUploadMutation } from "../../Hooks/useMutation";
-import { getSocket } from "../../Lib/socket";
 import { encryptMessage } from "../../Hooks/useEncryptMessage";
+import { useSocket } from "../../Context/SocketContext";
 
 
 
 function SendMessageForm({ id, receiver, content, setContent }) {
-    const socket = getSocket()
+    const { socket } = useSocket();
     const [openFiles, setOpenFiles] = useState(false);
     const [files, setFiles] = useState(null);
     const [startRecord, setStartRecord] = useState(false);

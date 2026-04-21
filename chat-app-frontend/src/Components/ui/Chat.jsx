@@ -75,7 +75,6 @@ function Chat({ id }) {
         }
     }
 
-
     useEffect(() => {
         const handler = (message) => {
             queryClient.setQueryData(["messages", id], (oldData) => {

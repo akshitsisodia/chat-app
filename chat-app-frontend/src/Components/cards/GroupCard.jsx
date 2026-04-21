@@ -50,10 +50,33 @@ function GroupCard({ data }) {
     }
     const cardClickedHandler = async () => {
         // await queryClient.invalidateQueries(["user"])
-        navigate(`/my-groups/${data.chat_id}`)
+        navigate(`/my-groups/${data?.chat_id}`)
     }
-    const date = new Date(data?.last_message_time)
-    const time = `${date.getHours()}:${date.getMinutes().toString().length < 2 ? "0" + date.getMinutes().toString() : date.getMinutes().toString()}`
+
+    // date 
+    const date = new Date(data?.last_message_time);
+    const now = Date.now();
+    const diff = now - date.getTime();
+    const isWithin24h = diff < 24 * 60 * 60 * 1000;
+
+    let formatted;
+
+    if (isWithin24h) {
+        // show time
+        const hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+
+        formatted = `${hours}:${minutes}`;
+    } else {
+        // show date (you can customize format)
+        formatted = date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short"
+        });
+    }
+    // date 
+    // const date = new Date(data?.last_message_time)
+    // const time = `${date.getHours()}:${date.getMinutes().toString().length < 2 ? "0" + date.getMinutes().toString() : date.getMinutes().toString()}`
 
     return (
         <div className="chatCard">
@@ -65,7 +88,7 @@ function GroupCard({ data }) {
                 {content && <p className="chatCard-content-main">{content}</p>}
             </button>
             <div className="chatCard-detail">
-                {time && <p className="chatCard-detail-time">{time}</p>}
+                {data?.last_message_time && <p className="chatCard-detail-time">{formatted}</p>}
                 {data.unread_count > 0 && <p className="chatCard-detail-unreads">{data.unread_count}</p>}
             </div>
 

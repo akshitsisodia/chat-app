@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import NoChat from './NoChat'
 import Loading from './Loading'
 import { useEffect } from "react"
-import { getSocket } from "../../Lib/socket"
 import { useNavigate } from "react-router-dom"
 import { FaMagnifyingGlass } from "react-icons/fa6"
 import ChatsList from "../common/ChatsList"
@@ -23,8 +22,7 @@ function Chats({ activeId }) {
     const navigate = useNavigate();
 
     let { chats, isLoading, error } = useChats()
-
-    chats = chats.filter(curr => { return (curr.last_message !== null || curr?.type === 'group') })
+    chats = chats.filter(curr => { return (curr && (curr?.last_message !== null || curr?.type === 'group')) })
 
     const newMessagehandler = (message) => {
         if (activeId) {
@@ -54,6 +52,7 @@ function Chats({ activeId }) {
 
             const rest = old.data.filter(curr => {
                 if (curr.chat_id === message.chat_id) {
+                    // const ms = new Date().toISOString();
                     updatedChat = {
                         ...curr,
                         last_message: message.content,
@@ -88,12 +87,19 @@ function Chats({ activeId }) {
     const handler = (chat) => {
         queryClient.setQueryData(["chats"], (old) => {
             if (!old) return old;
+            const newChat = {
+                ...chat,
+                last_message: null,
+                last_messsage_time: null,
+                nonce: null,
+                unread_count: null
+            }
 
             const filtered = old.data.filter(c => c.chat_id != chat.chat_id);
 
             return {
                 ...old,
-                data: [chat, ...filtered]
+                data: [newChat, ...filtered]
             };
         })
     }
