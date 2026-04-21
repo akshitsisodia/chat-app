@@ -6,8 +6,8 @@ const api = import.meta.env.VITE_API_BASE_URL;
 // const api = "https://chat-app-6h3y.onrender.com"
 // const api = "http://localhost:8000";
 
-export const connectSocket = (token) => {
-  if (!socket) {
+export const connectSocket = () => {
+  if (!socket || !socket?.connected) {
     socket = io(api, {
       transports: ["websocket", "polling"],
       withCredentials: true,

@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }) => {
             return;
         }
 
-        const s = connectSocket(me.token);
+        const s = connectSocket();
         setSocket(s);
 
     }, [me]);
