@@ -9,8 +9,7 @@ const api = import.meta.env.VITE_API_BASE_URL;
 export const connectSocket = (token) => {
   if (!socket) {
     socket = io(api, {
-      autoConnect: false,
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       withCredentials: true,
     });
 
@@ -26,12 +25,6 @@ export const connectSocket = (token) => {
     socket.on("connect_error", (err) => {
       console.log("Connect error:", err.message);
     });
-  }
-
-  socket.auth = { token };
-
-  if (!socket.connected) {
-    socket.connect();
   }
 
   return socket;
