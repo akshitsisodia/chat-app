@@ -78,7 +78,7 @@ function Groups({ activeId }) {
         socket.on("groupMessage", handler)
 
         return () => socket.off("groupMessage", handler)
-    }, [queryClient, activeId])
+    }, [socket, queryClient, activeId])
 
 
     useEffect(() => {
@@ -96,7 +96,7 @@ function Groups({ activeId }) {
         }
         socket.on("newChat", handler)
         return () => socket.off("newChat", handler)
-    }, [queryClient])
+    }, [socket, queryClient])
 
 
     if (!isLoading && chats.length === 0) return <div className="noUser-state"><NoChat /></div>

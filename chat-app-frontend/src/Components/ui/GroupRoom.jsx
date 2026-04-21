@@ -5,19 +5,19 @@ import ButtonGoBack from "../common/ButtonGoBack";
 import { useEffect, useRef, useState } from "react";
 import { getPrivateMessage } from "../../Services/MessageAPI";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getSocket } from "../../Lib/socket";
 import SendGroupMessageForm from "../form/SendGroupMessageForm";
 import GroupMessages from "./GroupMessages";
 import { useAuth } from "../../Context/AuthContext";
 import ChatRoomTop from "../cards/ChatRoomTop";
 import { useChats } from "../../Context/ChatsContext";
+import { useSocket } from "../../Context/SocketContext";
 
 function GroupRoom({ activeId }) {
     const { chats } = useChats()
     const chat = chats?.filter(curr => curr.chat_id === activeId)
 
     const queryClient = useQueryClient();
-    const socket = getSocket();
+    const { socket } = useSocket();
 
     const [content, setContent] = useState("")
     const [scroll, setScroll] = useState(true);

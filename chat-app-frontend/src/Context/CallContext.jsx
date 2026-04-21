@@ -108,7 +108,9 @@ export const CallProvider = ({ children }) => {
         const stream = await getMedia(video);
 
         // Attach to UI  
-        myVideo.current.srcObject = stream;
+        if (myVideo.current) {
+            myVideo.current.srcObject = stream;
+        }
 
 
         // Add stream to connection (pc "peerConnection")
@@ -158,7 +160,9 @@ export const CallProvider = ({ children }) => {
 
         const stream = await getMedia(state.callType === "video");
 
-        myVideo.current.srcObject = stream;
+        if (myVideo.current) {
+            myVideo.current.srcObject = stream;
+        }
 
         // add tracks
         stream.getTracks().forEach(track => {
@@ -282,7 +286,7 @@ export const CallProvider = ({ children }) => {
             console.error("ICE error:", err);
         }
     };
-    const handleIncoming = async ({ from, user, offer, type }) => {
+    const handleIncoming = async ({ user, offer, type }) => {
         // 🔥 ALWAYS create fresh pc here
         if (pc.current) {
             try { pc.current.close(); } catch { }
@@ -433,7 +437,6 @@ export const CallProvider = ({ children }) => {
 
     // useEffect(() => {
     //     if (state.status === CALL_STATE.RINGING) {
-    //         // audio + vibration
     //         startRinging();
     //     } else {
     //         stopRinging();

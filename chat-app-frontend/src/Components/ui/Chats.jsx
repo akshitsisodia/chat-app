@@ -111,13 +111,13 @@ function Chats({ activeId }) {
         return () => {
             events.forEach(event => socket.off(event, newMessagehandler));
         };
-    }, [queryClient, activeId]);
+    }, [socket, queryClient, activeId]);
 
 
     useEffect(() => {
         socket.on("newChat", handler)
         return () => socket.off("newChat", handler)
-    }, [queryClient])
+    }, [socket, queryClient])
 
 
     if (!isLoading && chats.length === 0) return <div className="noUser-state"><NoChat /></div>

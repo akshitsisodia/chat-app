@@ -67,7 +67,7 @@ const initSocket = (server) => {
     // receive call request
     socket.on("call-user", ({ to, offer, type }) => {
       io.to(to).emit("incoming-call", {
-        from: socket.id,
+        // from: socket.id,
         user: socket.user,
         offer,
         type,

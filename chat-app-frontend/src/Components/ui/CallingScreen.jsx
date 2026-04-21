@@ -20,14 +20,14 @@ function CallingScreen({ myVideo, remoteVideo, endCall, isCalling = true, isVide
                     >
                         {isMaximize ? <FaMaximize /> : <FaMinimize />}
                     </button>}
-                    <button 
-                        className="videocall-other-button" 
+                    <button className="videocall-end-button" onClick={() => endCall("END")}><FaPhoneSlash /></button>
+                    <button
+                        className="videocall-other-button"
                         onClick={toggleMute}
                         title={isMuted ? "Unmute" : "Mute"}
                     >
                         {isMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
                     </button>
-                    <button className="videocall-end-button" onClick={() => endCall("END")}><FaPhoneSlash /></button>
                     {/* <button className="videocall-other-button" onClick={endCall}><FaVideo /></button> */}
                     {/* <button className="videocall-other-button" onClick={endCall}><FaGear /></button> */}
                 </div>

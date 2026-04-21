@@ -8,7 +8,7 @@ function IncomingCall({ caller, isVideo = false, acceptCall, rejectCall }) {
                 <img src={caller?.photo} alt={caller?.name} />
                 {/* <p>{caller?.email}</p> */}
                 <h3>{caller?.name}</h3>
-                <p>is now video calling...</p>
+                <p>is now {isVideo ? "video" : "audio"} calling...</p>
             </div>
             <div className="incoming-call-buttons">
                 <button
