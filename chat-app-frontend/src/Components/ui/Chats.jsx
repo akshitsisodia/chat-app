@@ -22,7 +22,6 @@ function Chats({ activeId }) {
     const navigate = useNavigate();
 
     let { chats, isLoading, error } = useChats()
-    chats = chats.filter(curr => { return (curr && (curr?.last_message !== null || curr?.type === 'group')) })
 
     const newMessagehandler = (message) => {
         if (activeId) {

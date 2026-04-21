@@ -17,7 +17,8 @@ export const ChatsProvider = ({ children }) => {
         queryFn: getPrevChats,
         enabled: !!me
     })
-    const chats = me ? (data?.data ?? []) : [];
+    let chats = me ? (data?.data ?? []) : [];
+    chats = chats.filter(curr => { return (curr && (curr?.last_message !== null || curr?.type === 'group')) })
 
     const value = useMemo(() => ({
         chats,

@@ -20,7 +20,7 @@ const initialState = {
 function callReducer(state, action) {
     switch (action.type) {
         case "OUTGOING":
-            return { ...state, status: CALL_STATE.OUTGOING, peer: action?.peer };
+            return { ...state, status: CALL_STATE.OUTGOING, peer: action?.peer, callType: action.callType };
 
         case "CONNECTING":
             return { ...state, status: CALL_STATE.CONNECTING };
@@ -61,6 +61,8 @@ export const CallProvider = ({ children }) => {
     const localStream = useRef(null);
     const myVideo = useRef(null);
     const remoteVideo = useRef(null);
+    const [isMuted, setIsMuted] = useState(false);
+    // const [isMuted, setIsMuted] = useState(false);
 
     const pendingCandidates = useRef([]);
 
@@ -70,7 +72,6 @@ export const CallProvider = ({ children }) => {
         ]
     }));
 
-    // const [incomingCall, setIncomingCall] = useState(null);
 
     const getMedia = async (video) => {
         const needNewStream =
@@ -101,7 +102,7 @@ export const CallProvider = ({ children }) => {
             iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
         });
 
-        dispatch({ type: "OUTGOING", peer: user });
+        dispatch({ type: "OUTGOING", peer: user, callType: video ? "video" : "audio" });
 
         // Get camera + mic
         const stream = await getMedia(video);
@@ -109,9 +110,6 @@ export const CallProvider = ({ children }) => {
         // Attach to UI  
         myVideo.current.srcObject = stream;
 
-
-        // console.log(localStream.current);
-        // console.log(localStream.current?.getTracks().map(t => t.kind));
 
         // Add stream to connection (pc "peerConnection")
         stream.getTracks().forEach(track => {
@@ -207,6 +205,16 @@ export const CallProvider = ({ children }) => {
         }
     }
 
+    const toggleMute = () => {
+        if (localStream.current) {
+            const audioTrack = localStream.current.getAudioTracks()[0];
+            if (audioTrack) {
+                audioTrack.enabled = isMuted;
+                setIsMuted(!isMuted);
+            }
+        }
+    };
+
     function endCall(reason = "END", notify = true) {
 
         // 1. Stop local media (camera + mic)
@@ -214,6 +222,9 @@ export const CallProvider = ({ children }) => {
             localStream.current.getTracks().forEach(track => track.stop());
             localStream.current = null;
         }
+
+        // Reset mute state when call ends
+        setIsMuted(false);
 
         // 2. Clear video elements
         if (myVideo.current) {
@@ -431,7 +442,7 @@ export const CallProvider = ({ children }) => {
 
 
     return (
-        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall }}>
+        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteVideo, isMuted, toggleMute }}>
             {children}
 
             {/* GLOBAL UI */}
@@ -440,10 +451,8 @@ export const CallProvider = ({ children }) => {
 
             {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED)
                 &&
-                <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} />
+                <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} isVideo={state?.callType === "video" ? true : false} />
             }
-
-            {/* {state.status === CALL_STATE.CONNECTED && <CallingScreen myVideo={myVideo} remoteVideo={remoteVideo} endCall={endCall} isCalling={false} />} */}
 
         </CallContext.Provider>
     );
