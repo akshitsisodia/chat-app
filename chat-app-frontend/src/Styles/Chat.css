@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   justify-content: end;
+  background-color: #fff;
 }
 
 .chat-top {
@@ -59,7 +60,6 @@
   flex-direction: column-reverse;
   gap: 0.5rem;
   align-items: center;
-  background-color: #fff;
 }
 .chat-main::-webkit-scrollbar {
   display: none;

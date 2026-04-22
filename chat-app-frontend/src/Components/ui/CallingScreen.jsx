@@ -46,13 +46,13 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                 {/* <button className="videocall-volume-button"><FaVolumeHigh /></button> */}
 
                 <div className="videocall-interface-buttons">
-                    {isVideoCall && <button
+                    {/* {isVideoCall && <button
                         type="button"
                         className="videocall-other-button"
                         onClick={() => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
                     >
                         {isMaximize ? <FaMaximize /> : <FaMinimize />}
-                    </button>}
+                    </button>} */}
                     <button
                         className="videocall-other-button"
                         onClick={toggleMute}

@@ -74,7 +74,7 @@
 }
 .users-card-active {
   /* background-color: #eee; */
-  background-color:var(--primary-color);
+  background-color: var(--primary-color);
   color: #fff;
   border-radius: 10px;
 }
@@ -108,7 +108,7 @@
   background-color: transparent;
   border: none;
   cursor: pointer;
-  padding: .7rem;
+  padding: 0.7rem;
   font-size: 1rem;
   border-radius: 10px;
 }
@@ -130,6 +130,7 @@
   box-shadow: 0 0 2px #0005;
   border-radius: 10px;
   width: fit-content;
+  width: 100%;
 
   & button {
     border-radius: 10px;
@@ -139,8 +140,12 @@
   }
 
   & video {
-    height: 200px;
+    height: 12rem;
     border-radius: 10px;
+  }
+  & audio {
+    width: 100%;
+    min-width: 15rem;
   }
 }
 
@@ -221,6 +226,16 @@
   }
 }
 
+@media screen and (max-width: 350px) {
+  .pdf-container {
+    & video {
+      height: 10rem;
+    }
+    & audio {
+      min-width: 10rem;
+    }
+  }
+}
 @media screen and (max-width: 768px) {
   .prevChats-chat-page {
     display: none;

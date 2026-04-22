@@ -54,7 +54,7 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
 
     //     Audio
     if (file?.type?.startsWith("audio/")) {
-        return <audio src={url} controls style={{width:"250px", height:"40px"}}/>
+        return <audio src={url} controls />
     }
 
     // 📄 Other

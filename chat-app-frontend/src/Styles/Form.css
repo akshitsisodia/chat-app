@@ -1,15 +1,11 @@
 .sendMessageForm {
-  /* position: absolute; */
-  /* bottom: 0; */
   width: calc(100% - 2rem);
   height: fit-content;
   padding: 0.5rem;
-  /* padding-top: 0px; */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   background-color: #fff;
-  /* background-color: #eee; */
   border: 1px solid #ccc;
   margin: 0.5rem auto;
   border-radius: 10px;
@@ -33,9 +29,10 @@
 }
 .sendMessageForm-recording-inputs {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
   height: 40px;
-  align-items: center;
   gap: 1rem;
 }
 
@@ -81,7 +78,7 @@
 
 .sendMessageForm-send-button {
   height: 40px;
-  width: 40px;
+  min-width: 40px;
   background-color: var(--primary-color);
   border: none;
   border-radius: 10px;
@@ -176,11 +173,11 @@
     color: var(--primary-color);
   }
 }
-.members-container{
+.members-container {
   max-height: 40vh;
   overflow-y: scroll;
 }
-.members-container::-webkit-scrollbar{
+.members-container::-webkit-scrollbar {
   display: none;
 }
 

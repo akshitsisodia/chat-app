@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react"
 import { FaXmark } from "react-icons/fa6"
 import { FaCheckDouble } from "react-icons/fa"
 import FilesList from "../common/FilesList"
+import IncommingCard from "../cards/IncommingCard"
+import OutgoingCard from "../cards/OutgoingCard"
 
 
 function Messages({ id, receiver, content, messages }) {
@@ -32,12 +34,27 @@ function Messages({ id, receiver, content, messages }) {
                     <div key={curr.id} className="messages">
                         <div className={curr.sender_id === me.id ? "messages-send-container" : "messages-receive-container"}>
                             {/* load files  */}
-                            {curr?.files?.length > 0 && <FilesList data={curr.files} public_key={receiver.public_key} imageButtonClicked={imageButtonClicked} />}
+                            {/* {curr?.files?.length > 0 && <FilesList data={curr.files} public_key={receiver.public_key} imageButtonClicked={imageButtonClicked} />} */}
                             {/* load message  */}
-                            {curr.content && <>
-                                {curr.sender_id === me.id ? < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} /> : <ReceiveMessageCard sender={receiver} nonce={curr?.nonce} message={curr?.content} />}
-                            </>}
-                            {curr.sender_id === me.id && <FaCheckDouble className="not-seen" color={curr.seen ? "#00d0ff" : ""} />}
+                            {/* {curr.content && <> */}
+                            {/* {curr.sender_id === me.id && <FaCheckDouble className="not-seen" color={curr.seen ? "#00d0ff" : ""} />} */}
+                            {curr.sender_id === me.id
+                                ?
+                                <>
+                                    {/* <OutgoingCard /> */}
+                                    < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
+                                    {/* {curr.sender_id === me.id && <img className="message-sender-image" src={me.photo} alt="" />} */}
+                                </>
+
+                                :
+                                <>
+                                    {/* <IncommingCard /> */}
+                                    {<img className="message-receiver-image" src={me.photo} alt="" />}
+                                    <ReceiveMessageCard sender={receiver} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
+                                </>
+                            }
+                            {/* </>} */}
+
 
                         </div>
                     </div >

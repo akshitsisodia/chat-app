@@ -18,7 +18,6 @@ export const ChatsProvider = ({ children }) => {
         enabled: !!me
     })
     let chats = me ? (data?.data ?? []) : [];
-    chats = chats.filter(curr => { return (curr && (curr?.last_message !== null || curr?.type === 'group')) })
 
     const value = useMemo(() => ({
         chats,

@@ -10,6 +10,7 @@ const FileModel = require("../models/file.model");
 const ChatUnreads = require("../models/chatUnread.model");
 const ChatModel = require("../models/chat.model");
 const { uploadImage, uploadAny } = require("../config/multer");
+const { pool } = require("../config/db");
 
 const getResourceType = (mimetype) => {
   if (mimetype.startsWith("image/")) return "image";
@@ -19,154 +20,152 @@ const getResourceType = (mimetype) => {
 };
 
 exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
-  const content = req?.body?.content;
-  const nonce = req?.body?.nonce;
-  const chatId = req.params.id;
-  const senderId = req.user.id;
+  const client = await pool.connect();
+  try {
+    const content = req?.body?.content;
+    const nonce = req?.body?.nonce;
+    const chatId = req.params.id;
+    const senderId = req.user.id;
 
-  const keys = Array.isArray(req.body?.keys) ? req.body.keys : [req.body.keys];
-  const nonces = Array.isArray(req.body?.nonces)
-    ? req.body.nonces
-    : [req.body.nonces];
+    const keys = Array.isArray(req.body?.keys)
+      ? req.body.keys
+      : [req.body.keys];
+    const nonces = Array.isArray(req.body?.nonces)
+      ? req.body.nonces
+      : [req.body.nonces];
 
-  const ivs = Array.isArray(req.body.ivs) ? req.body.ivs : [req.body.ivs];
-  const types = Array.isArray(req.body.types)
-    ? req.body.types
-    : [req.body.types];
+    const ivs = Array.isArray(req.body.ivs) ? req.body.ivs : [req.body.ivs];
+    const types = Array.isArray(req.body.types)
+      ? req.body.types
+      : [req.body.types];
 
-  const names = Array.isArray(req.body.names)
-    ? req.body.names
-    : [req.body.names];
+    const names = Array.isArray(req.body.names)
+      ? req.body.names
+      : [req.body.names];
 
-  const files = req.files;
+    const files = req.files;
 
-  if (!req.files || req.files.length === 0) {
-    return next(new CustomError("No files uploaded", 400));
-  }
+    if (!req.files || req.files.length === 0) {
+      return next(new CustomError("No files uploaded", 400));
+    }
 
-  if (
-    files.length !== types.length ||
-    files.length !== names.length ||
-    files.length !== ivs.length
-  ) {
-    return next(new CustomError("Invalid file metadata", 400));
-  }
+    if (
+      files.length !== types.length ||
+      files.length !== names.length ||
+      files.length !== ivs.length
+    ) {
+      return next(new CustomError("Invalid file metadata", 400));
+    }
+    await client.query("BEGIN");
 
-  const receivers = await ChatMemberModel.findReceiversByChatId({
-    chatId,
-    senderId,
-  });
-  const receiverIds = receivers.map((r) => r.user_id);
+    const receivers = await ChatMemberModel.findReceiversByChatId({
+      chatId,
+      senderId,
+    });
+    const receiverIds = receivers.map((r) => r.user_id);
 
-  // 1. find
-  let chat = await ChatModel.findById(chatId);
+    // 1. find
+    let chat = await ChatModel.findById(chatId);
 
-  if (!chat) {
-    return next(new CustomError("chat not found!", 404));
-  }
+    if (!chat) {
+      return next(new CustomError("chat not found!", 404));
+    }
 
-  const results = await Promise.all(
-    files.map(async (file, i) => {
-      try {
-        const resourceType = getResourceType(file.mimetype);
-
-        const result = await cloudinary.uploader.upload(file.path, {
-          resource_type: resourceType,
-          timeout: 60000,
-        });
-
-        // delete file after upload
-        await fs.unlink(file.path);
-
-        return {
-          url: result.secure_url,
-          type: types[i],
-          name: names[i],
-          encrypted_key: keys[i],
-          iv: ivs[i],
-          nonce: nonces[i],
-        };
-      } catch (err) {
-        // cleanup even if upload fails
+    const results = await Promise.all(
+      files.map(async (file, i) => {
         try {
+          const resourceType = getResourceType(file.mimetype);
+
+          const result = await cloudinary.uploader.upload(file.path, {
+            resource_type: resourceType,
+            timeout: 60000,
+          });
+
+          // delete file after upload
           await fs.unlink(file.path);
-        } catch (_) {}
 
-        throw err;
-      }
-    }),
-  );
+          return {
+            url: result.secure_url,
+            type: types[i],
+            name: names[i],
+            encrypted_key: keys[i],
+            iv: ivs[i],
+            nonce: nonces[i],
+          };
+        } catch (err) {
+          // cleanup even if upload fails
+          try {
+            await fs.unlink(file.path);
+          } catch (_) {}
 
-  // 2. create message
-  const message = await MessageModel.create({
-    chatId,
-    senderId,
-    content,
-    nonce,
-  });
+          throw err;
+        }
+      }),
+    );
 
-  const files_data = await Promise.all(
-    results.map((curr) => {
-      return FileModel.create({
-        message_id: message.id,
-        url: curr.url,
-        type: curr.type,
-        name: curr.name,
-        iv: curr.iv,
-        encrypted_key: curr?.encrypted_key,
-        nonce: curr?.nonce,
+    // 2. create message
+    const message = await MessageModel.create(
+      {
+        chatId,
+        senderId,
+        content,
+        nonce,
+      },
+      client,
+    );
+
+    const files_data = await Promise.all(
+      results.map((curr) => {
+        return FileModel.create(
+          {
+            message_id: message.id,
+            url: curr.url,
+            type: curr.type,
+            name: curr.name,
+            iv: curr.iv,
+            encrypted_key: curr?.encrypted_key,
+            nonce: curr?.nonce,
+          },
+          client,
+        );
+      }),
+    );
+
+    // 3. update unread
+    await ChatUnreads.createOrupdateUnreads(
+      {
+        chatId,
+        receiverIds,
+      },
+      client,
+    );
+
+    // 4. update chat
+    await ChatModel.updateChat(chatId, client);
+
+    await client.query("COMMIT");
+
+    const emitMessage = chat.type === "private" ? "newMessage" : "groupMessage";
+
+    // send to sender
+    getIO()
+      .to([senderId, ...receiverIds])
+      .emit(emitMessage, {
+        ...message,
+        files: files_data,
       });
-    }),
-  );
 
-  // 3. update unread
-  const unreadCounts = await ChatUnreads.createOrupdateUnreads({
-    chatId,
-    receiverIds,
-  });
-
-  // 4. update chat
-  await ChatModel.updateChat(chatId);
-
-  getIO()
-    .to(chatId)
-    .to(senderId)
-    // .to(receiverIds)
-    .emit("newMessage", {
-      ...message,
-      files: files_data,
-      // unread_count: 0,
+    res.status(200).json({
+      status: "success",
+      message: "Data sent successfully",
     });
-
-  // send to receivers
-  if (chat.type === "private") {
-    receiverIds.forEach((receiverId) => {
-      const userUnread =
-        unreadCounts.find((u) => u.user_id === receiverId)?.unread_count || 0;
-
-      getIO()
-        .to(receiverId)
-        .emit("newMessage", {
-          ...message,
-          unread_count: userUnread,
-          files: files_data,
-        });
-    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.log(error);
+    return next(new CustomError("Upload failed!", 500));
+  } finally {
+    client.release();
   }
-
-  // getIO()
-  //   .to(chat.id)
-  //   .to(receivers)
-  //   .emit("newMessage", {
-  //     ...message,
-  //     unread_count,
-  //     files: files_data,
-  //   });
-
-  res.status(200).json({
-    status: "success",
-    message: "Data sent successfully",
-  });
 });
 
 exports.handleUpload =

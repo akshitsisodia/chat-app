@@ -28,6 +28,7 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
       senderId,
     });
     const receiverIds = receivers.map((r) => r.user_id);
+    
     // 1. find
     let chat = await ChatModel.findById(chatId);
 

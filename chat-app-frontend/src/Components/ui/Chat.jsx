@@ -131,11 +131,9 @@ function Chat({ id }) {
             {/* head  */}
             <div className="chat-top">
                 <ButtonGoBack />
-                <UserCard receiver={receivers[0]} chatId={id}>
-                    {/* <VideoCall socket={socket} userId={receivers[0]?.user_id} /> */}
-                </UserCard>
-                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt color="var(--primary-color)" /></button>
+                <UserCard receiver={receivers[0]} chatId={id} />
                 <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo color="var(--primary-color)" /></button>
+                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt color="var(--primary-color)" /></button>
             </div>
 
             {/* main  */}

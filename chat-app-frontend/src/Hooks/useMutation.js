@@ -2,13 +2,16 @@ import { useMutation } from "@tanstack/react-query";
 import { uploadFiles } from "../Services/uploadApi";
 import { setPublicKey } from "../Services/userAPI";
 
-export const useUploadMutation = ({ setFiles }) => {
+export const useUploadMutation = ({ setFiles, setAudioUrl }) => {
   return useMutation({
     mutationFn: uploadFiles,
     onSuccess: (data) => {
       setFiles(null);
+      setAudioUrl("");
     },
     onError: (error) => {
+      setFiles(null);
+      setAudioUrl("");
       console.log(error?.response);
     },
   });
