@@ -1,5 +1,15 @@
 const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 const CustomError = require("../utils/CustomError");
+
+// Resolve to an absolute path (more reliable than "uploads/")
+const uploadDir = path.join(__dirname, "..", "uploads");
+
+// Create the folder if it doesn't exist
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
