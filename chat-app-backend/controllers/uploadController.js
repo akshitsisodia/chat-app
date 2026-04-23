@@ -26,6 +26,7 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
     const nonce = req?.body?.nonce;
     const chatId = req.params.id;
     const senderId = req.user.id;
+    console.log(content, nonce);
 
     const keys = Array.isArray(req.body?.keys)
       ? req.body.keys
@@ -56,12 +57,14 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
     ) {
       return next(new CustomError("Invalid file metadata", 400));
     }
+
     await client.query("BEGIN");
 
     const receivers = await ChatMemberModel.findReceiversByChatId({
       chatId,
       senderId,
     });
+
     const receiverIds = receivers.map((r) => r.user_id);
 
     // 1. find
@@ -82,7 +85,10 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
           });
 
           // delete file after upload
-          await fs.unlink(file.path);
+          // await fs.unlink(file.path);
+          if (!result?.secure_url) {
+            throw new CustomError("Cloudinary returned invalid response", 500);
+          }
 
           return {
             url: result.secure_url,
@@ -93,12 +99,18 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
             nonce: nonces[i],
           };
         } catch (err) {
-          // cleanup even if upload fails
+          throw new CustomError(
+            `Failed to upload ${file.originalname}: ${err.message}`,
+            500,
+          );
+        } finally {
           try {
             await fs.unlink(file.path);
-          } catch (_) {}
-
-          throw err;
+          } catch (err) {
+            if (err.code !== "ENOENT") {
+              console.error("Unlink error:", err);
+            }
+          }
         }
       }),
     );
@@ -113,6 +125,7 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
       },
       client,
     );
+    console.log("RESULTS:", results);
 
     const files_data = await Promise.all(
       results.map((curr) => {

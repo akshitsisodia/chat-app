@@ -3,151 +3,63 @@ import * as util from "tweetnacl-util";
 
 import "../../Styles/Form.css"
 import { useEffect, useRef, useState } from "react";
-import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPause, FaPlus, FaVideo } from "react-icons/fa";
+import { FaArrowRight, FaImage, FaMicrophone, FaPaperclip, FaPaperPlane, FaPause, FaPlus, FaVideo } from "react-icons/fa";
 import { useUploadMutation } from "../../Hooks/useMutation";
 import { encryptGroupMessage } from "../../Util/crypto";
 import { getCachedKey } from "../../Util/CachesKeyMap";
 import { getGroupKeys } from "../../Services/chatsApi";
 import { useSocket } from "../../Context/SocketContext";
+import encryptGroupFile from "../../Util/encrypt/encryptGroupFile";
+import AudioRecordingButton from "../buttons/AudioRecordingButton";
+import ChooseFileButton from "../buttons/ChooseFileButton";
 
 function uint8ArrayToBase64(arr) {
     return btoa(String.fromCharCode(...arr));
 }
 
 function SendGroupMessageForm({ id, receiver, content, setContent }) {
-
     const { socket } = useSocket()
-    const [openFiles, setOpenFiles] = useState(false);
+    const groupKey = getCachedKey(id);
+
+    const inputRef = useRef();
+
+    const [chooseFile, setChooseFile] = useState(false);
     const [files, setFiles] = useState(null);
-    const [startRecord, setStartRecord] = useState(false);
-
-    const mediaRecorderRef = useRef(null);
-    const streamRef = useRef(null);
-    const chunksRef = useRef([]);
-
     const [isRecording, setIsRecording] = useState(false);
     const [audioUrl, setAudioUrl] = useState("");
-    const [audioFile, setAudioFile] = useState(null);
-    const [seconds, setSeconds] = useState(0);
 
-
-
-    const uploadMutation = useUploadMutation({ setFiles })
-
-    //!recording Logic
-    const startRecording = async () => {
-        //startRecording, streamRef, mediaRecorderRef, chunksRef, setAudioFile, setAudioUrl, setIsRecording
-        try {
-            setStartRecord(true)
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            streamRef.current = stream;
-
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            chunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    chunksRef.current.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-                const file = new File([blob], `recording-${Date.now()}.webm`, {
-                    type: "audio/webm",
-                });
-
-                setAudioFile(file);
-                setAudioUrl(URL.createObjectURL(blob));
-
-                if (streamRef.current) {
-                    streamRef.current.getTracks().forEach((track) => track.stop());
-                }
-            };
-
-            mediaRecorder.start();
-            setIsRecording(true);
-        } catch (error) {
-            console.error("Microphone access error:", error);
-        }
-    };
-
-    const stopRecording = () => {
-        // mediaRecorderRef, setIsRecording
-        if (!mediaRecorderRef.current) return;
-        mediaRecorderRef.current.stop();
-        setIsRecording(false);
-    };
-
-    const sendRecording = async () => {
-        // audioFile, isRecording, receiver
-        if (!audioFile) return;
-        if (isRecording) stopRecording();
-
-        const formData = new FormData();
-        const buffer = await audioFile.arrayBuffer();
-
-        // AES key + IV
-        const cryptoKey = await getCachedKey(id);
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-
-        const encryptedBuffer = await crypto.subtle.encrypt(
-            { name: "AES-GCM", iv },
-            cryptoKey,
-            buffer
-        );
-
-        // Convert to blob
-        const encryptedBlob = new Blob([encryptedBuffer]);
-
-        formData.append("files", encryptedBlob);
-        formData.append("ivs", btoa(String.fromCharCode(...iv)));
-        formData.append("types", audioFile.type);
-        formData.append("names", audioFile.name);
-
-        uploadMutation.mutate({ id, files: formData });
-        setAudioUrl("")
-        setStartRecord(false)
-    };
-
-    //!recording Logic ends
+    const uploadMutation = useUploadMutation({ setFiles, setAudioUrl })
 
     const onContentChangeHandler = (e) => {
         setContent(e.target.value);
     }
 
     const fileInputHandler = async (e) => {
-        //  generate AES key + IV
-
-        const cryptoKey = await getCachedKey(id); // from memory/cache
-
-
         const files = e.target.files;
         const formData = new FormData();
-
+        let defaultContent
 
         for (let file of files) {
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            //convert into raw bytes
-            const buffer = await file.arrayBuffer();
-
-            // encryption on those bytes
-            const encryptedBuffer = await crypto.subtle.encrypt(
-                { name: "AES-GCM", iv },
-                cryptoKey,
-                buffer
-            );
-
-            // Convert to blob for file like formate
-            const encryptedBlob = new Blob([encryptedBuffer]);
-
+            const { encryptedBlob, iv } = await encryptGroupFile(id, file, groupKey);
             // Append encrypted data
             formData.append("files", encryptedBlob);
-            formData.append("ivs", btoa(String.fromCharCode(...iv)));
+            formData.append("ivs", iv);
             formData.append("types", file.type);
             formData.append("names", file.name);
+
+            if (file.type.startsWith("image/")) {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Images" : "Image") : content;
+            } else if (file.type.startsWith("video/")) {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Videos" : "Video") : content;
+            } else {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Files" : "File") : content;
+            }
         }
+
+        const { ciphertext, iv } = await encryptGroupMessage(groupKey, defaultContent);
+
+        formData.append("content", uint8ArrayToBase64(new Uint8Array(ciphertext)));
+        formData.append("nonce", uint8ArrayToBase64(new Uint8Array(iv)));
 
         setFiles(formData)
 
@@ -161,21 +73,21 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
                 img.src = url;
                 img.classList.add("preview-container");
                 preview.appendChild(img);
-                setOpenFiles(false)
+                setChooseFile(false);
             } else if (file.type.startsWith("video/")) {
                 const video = document.createElement("video");
                 video.src = url;
                 video.controls = true;
                 video.classList.add("preview-container");
                 preview.appendChild(video);
-                setOpenFiles(false)
+                setChooseFile(false);
             }
             else {
                 const div = document.createElement("div");
                 div.innerHTML = `📄 ${file.name}`;
                 div.classList.add("preview-files-container");
                 preview.appendChild(div);
-                setOpenFiles(false)
+                setChooseFile(false);
 
             }
         }
@@ -191,26 +103,21 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
                 id,
                 files
             })
-            document.getElementById("preview").innerHTML = "";
-            return
+        } else {
+            const { ciphertext, iv } = await encryptGroupMessage(groupKey, content);
+
+            const data = {
+                chatId: id,
+                content: uint8ArrayToBase64(new Uint8Array(ciphertext)),
+                nonce: uint8ArrayToBase64(new Uint8Array(iv)),
+            }
+            socket.emit("sendMessage", data)
         }
 
-        // content encryption before sending 
-        const groupKey = getCachedKey(id);
-
-        const { ciphertext, iv } = await encryptGroupMessage(groupKey, content);
-
-        const data = {
-            chatId: id,
-            content: uint8ArrayToBase64(new Uint8Array(ciphertext)),
-            nonce: uint8ArrayToBase64(new Uint8Array(iv)),
-        }
-
-        socket.emit("sendMessage", data)
 
         setContent("")
-
         document.getElementById("preview").innerHTML = "";
+        inputRef.current?.focus();
     }
 
     const handleKeyDown = (e) => {
@@ -219,71 +126,26 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
         }
     };
 
-    useEffect(() => {
-        let interval;
-        if (isRecording) {
-            interval = setInterval(() => {
-                setSeconds(prev => prev + 1);
-            }, 1000);
-        } else {
-            clearInterval(interval);
-            setSeconds(0);
-        }
-        return () => clearInterval(interval);
-    }, [isRecording]);
 
     return (
         <form className="sendMessageForm" onSubmit={onSubmitHandler}>
             {/* previews  */}
-            <div id="preview">
-            </div>
-            <div id="preview-file">
-            </div>
+            <div id="preview" />
+            <div id="preview-file" />
             {audioUrl && <audio controls src={audioUrl} />}
 
             {/* sending logic  */}
             <div className="sendMessageForm-main" >
-                {!startRecord && <div className="sendMessageForm-inputs">
-                    {openFiles && <div className="sendMessageForm-file-inputs">
-                        {/* input 1 */}
-                        <label htmlFor="file" className="sendMessageForm-file-input" onClick={() => document.getElementById('fileInput').click()}>
-                            <FaPaperclip /> Document
-                            <input type="file" multiple id="fileInput" onChange={fileInputHandler} />
-                        </label>
-                        <label htmlFor="file" className="sendMessageForm-file-input" onClick={() => document.getElementById('mediaInput').click()} >
-                            <FaImage /> Photos
-                            <input type="file" accept="image/*" multiple id="mediaInput" onChange={fileInputHandler} />
-                        </label>
-                        <label htmlFor="file" className="sendMessageForm-file-input" onClick={() => document.getElementById('videoInput').click()} >
-                            <FaVideo /> Videos
-                            <input type="file" accept="video/*" multiple id="videoInput" onChange={fileInputHandler} />
-                        </label>
+                <div className="sendMessageForm-inputs">
+                    {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
+                    {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
+                    <AudioRecordingButton public_key={groupKey} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} isGroup={true} groupId={id} />
+                </div>
 
-                    </div>}
-                    <button type="button" className="sendMessageForm-files-button" onClick={() => setOpenFiles(prev => prev === false ? true : false)}><FaPlus color="#333" /></button>
-                    <textarea type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setOpenFiles(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />
-                    <button className="sendMessageForm-audio-button" onClick={() => { setStartRecord(true); startRecording(); setOpenFiles(false); }}><FaMicrophone color="#333" /></button>
-                </div>}
-                {!startRecord && <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending}>
-                    {!uploadMutation.isPending && <FaArrowRight color="#fff" />}
+                <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending || isRecording} >
+                    {!uploadMutation.isPending && <FaPaperPlane color="#fff" />}
                     {uploadMutation.isPending && <div className="loader"></div>}
-                </button>}
-
-                {/* Audio  recorder*/}
-                {
-                    startRecord &&
-                    <>
-                        <div className="sendMessageForm-recording-inputs">
-                            <button className="sendMessageForm-audio-button" onClick={stopRecording} disabled={!isRecording}><FaPause /></button>
-                            {isRecording && <div>Recording: {seconds}s</div>}
-                        </div>
-                        <button type="button" onClick={sendRecording} className="sendMessageForm-send-button" disabled={uploadMutation.isPending && !audioFile}>
-                            {!uploadMutation.isPending && <FaArrowRight color="#fff" />}
-                            {uploadMutation.isPending && <div className="loader"></div>}
-                        </button>
-                    </>
-                }
-
+                </button>
             </div>
 
         </form>

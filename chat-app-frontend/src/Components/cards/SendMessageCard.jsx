@@ -31,9 +31,12 @@ function SendMessageCard({ receiver, message, nonce, data, imageButtonClicked })
         <div className="sendMessageCard">
             {data?.files?.length > 0 && < FilesList data={data.files} public_key={receiver.public_key} imageButtonClicked={imageButtonClicked} />}
 
-            {content && <p className="sendMessageCard-content">
-                {content}
-            </p>}
+            {content
+                &&
+                <p className="sendMessageCard-content">
+                    {content}
+                </p>
+            }
             <p className="sendMessageCard-seen">
                 {formatted}
                 <FaCheckDouble color={data.seen ? "#00d0ff" : ""} />

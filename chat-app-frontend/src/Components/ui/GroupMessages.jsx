@@ -12,8 +12,7 @@ import { getGroupKeys } from "../../Services/chatsApi"
 import FilesList from "../common/FilesList"
 import GroupFileList from "../common/GroupFileList"
 
-function GroupMessages({ id, content, messages, receivers }) {
-    const bottomRef = useRef(null);
+function GroupMessages({ bottomRef, id, content, messages, receivers }) {
 
     const [imageLink, setImageLink] = useState(null)
     const [groupKey, setGroupKey] = useState(null)
@@ -70,30 +69,27 @@ function GroupMessages({ id, content, messages, receivers }) {
         setupKey();
     }, [data, id]);
 
-    useEffect(() => {
-        bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
-    }, [content, id]);
-
 
 
     return (
         <>
             <div ref={bottomRef} />
             {messages.length > 0 && messages.map((curr, i) => {
-                const receiver = receivers.filter(r => r.user_id === curr.sender_id)
+                const receiver = receivers.find(r => r.user_id === curr.sender_id)
                 return (
                     <div key={curr.id} className="messages">
                         <div className={curr.sender_id === me.id ? "messages-send-container" : "messages-receive-container"}>
 
-                            {curr?.files?.length > 0 && <GroupFileList data={curr.files} chatId={id} receiver={receiver[0]?.public_key} imageButtonClicked={imageButtonClicked} />}
+                            {/* {curr.sender_id === me.id && <FaCheck className="not-seen" color={curr.seen ? "#00d0ff" : "#00d0ff"} />} */}
+                            {curr.sender_id === me.id ?
+                                < GroupSendMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
+                                :
+                                <>
+                                    {<img className="message-receiver-image" src={receiver.photo} alt="" />}
+                                    <GroupReceiveMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} receiver={receiver} data={curr} imageButtonClicked={imageButtonClicked} />
+                                </>
+                            }
 
-                            {curr.content && <>
-                                {curr.sender_id === me.id ?
-                                    < GroupSendMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} />
-                                    :
-                                    <GroupReceiveMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} receiver={receiver[0]} />}
-                            </>}
-                            {curr.sender_id === me.id && <FaCheck className="not-seen" color={curr.seen ? "#00d0ff" : "#00d0ff"} />}
 
                         </div>
                     </div >

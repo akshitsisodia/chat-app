@@ -6,6 +6,7 @@ import CallingScreen from "../Components/ui/CallingScreen";
 
 import "../Styles/VideoCall.css";
 import { useSocket } from "./SocketContext";
+import createPeerConnection from "../webrtc/peer";
 
 const CallContext = createContext();
 
@@ -54,24 +55,21 @@ function callReducer(state, action) {
 }
 
 
+
 export const CallProvider = ({ children }) => {
     const { socket } = useSocket();
     const [state, dispatch] = useReducer(callReducer, initialState);
 
     const localStream = useRef(null);
     const myVideo = useRef(null);
-    const remoteVideo = useRef(null);
+
+    const [remoteStreams, setRemoteStreams] = useState({});
     const [isMuted, setIsMuted] = useState(false);
     const [isVideo, setIsVideo] = useState(false);
 
-    const pendingCandidates = useRef([]);
+    const pendingCandidates = useRef(new Map());
 
-    const pc = useRef(new RTCPeerConnection({
-        iceServers: [
-            { urls: "stun:stun.l.google.com:19302" } // free STUN
-        ]
-    }));
-
+    const peers = useRef(new Map());
 
     const getMedia = async (video) => {
         const needNewStream =
@@ -95,14 +93,24 @@ export const CallProvider = ({ children }) => {
 
     //actions
     const callUser = async (user, video = false) => {
-        if (pc.current) {
-            pc.current.close();
-        }
-        pc.current = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        dispatch({ type: "OUTGOING", peer: user, callType: video ? "video" : "audio" });
+
+        const pc = createPeerConnection({
+            onTrack: (event) => {
+                setRemoteStreams(prev => ({
+                    ...prev,
+                    [user.id]: event.streams[0]
+                }));
+            },
+            onIce: (candidate) => {
+                socket.emit("ice-candidate", {
+                    to: user?.id,
+                    candidate,
+                });
+            }
         });
 
-        dispatch({ type: "OUTGOING", peer: user, callType: video ? "video" : "audio" });
+        peers.current.set(user.id, pc)
 
         // Get camera + mic
         const stream = await getMedia(video);
@@ -112,40 +120,20 @@ export const CallProvider = ({ children }) => {
             myVideo.current.srcObject = stream;
         }
 
-
         // Add stream to connection (pc "peerConnection")
         stream.getTracks().forEach(track => {
-            const alreadyAdded = pc.current
+            const alreadyAdded = pc
                 .getSenders()
                 .some(sender => sender.track === track);
 
             if (!alreadyAdded) {
-                pc.current.addTrack(track, stream);
+                pc.addTrack(track, stream);
             }
         });
 
-        pc.current.ontrack = (event) => {
-            console.log("ontrack fired", event.streams);
-            if (remoteVideo.current) {
-                remoteVideo.current.srcObject = event.streams[0];
-            }
-        };
-
-        // ICE 
-        pc.current.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket?.emit("ice-candidate", {
-                    to: user.id,
-                    candidate: event.candidate,
-                });
-            }
-        };
-
         // Create OFFER = "i want to start a call"
-        const offer = await pc.current.createOffer();
-        await pc.current.setLocalDescription(offer);
-
-        // dispatch({ type: "CONNECTING" });
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
 
         // Send offer 
         socket?.emit("call-user", {
@@ -157,6 +145,11 @@ export const CallProvider = ({ children }) => {
 
     const acceptCall = async () => {
         dispatch({ type: "ACCEPT" });
+        const pc = peers.current.get(state.peer.id);
+        if (!pc) {
+            console.warn("Peer not found");
+            return;
+        }
 
         const stream = await getMedia(state.callType === "video");
 
@@ -166,33 +159,26 @@ export const CallProvider = ({ children }) => {
 
         // add tracks
         stream.getTracks().forEach(track => {
-            const exists = pc.current.getSenders().some(s => s.track === track);
+            const exists = pc.getSenders().some(s => s.track === track);
             if (!exists) {
-                pc.current.addTrack(track, stream);
+                pc.addTrack(track, stream);
             }
         });
 
-        pc.current.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket?.emit("ice-candidate", {
-                    to: state.peer.id,
-                    candidate: event.candidate,
-                });
+        await pc.setRemoteDescription(state.offer);
+
+        const candidates = pendingCandidates.current.get(state.peer.id) || [];
+        for (const c of candidates) {
+            try {
+                await pc.addIceCandidate(c);
+            } catch (error) {
+                console.warn("Failed to add ICE candidate", error);
             }
-        };
-
-        // offer
-        await pc.current.setRemoteDescription(state.offer);
-
-        // apply queued ICE
-        for (const c of pendingCandidates.current) {
-            await pc.current.addIceCandidate(c);
         }
-        pendingCandidates.current.length = 0;
+        pendingCandidates.current.delete(state.peer.id);
 
-
-        const answer = await pc.current.createAnswer();
-        await pc.current.setLocalDescription(answer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
 
         dispatch({ type: "CONNECTED" });
 
@@ -244,26 +230,18 @@ export const CallProvider = ({ children }) => {
             myVideo.current.srcObject = null;
         }
 
-        if (remoteVideo.current) {
-            remoteVideo.current.srcObject = null;
-        }
+        setRemoteStreams({});
 
         // 3. Close peer connection
-        if (pc.current) {
-            pc.current.ontrack = null;
-            pc.current.onicecandidate = null;
-            pc.current.close();
-
-            // IMPORTANT: recreate for next call
-            pc.current = new RTCPeerConnection({
-                iceServers: [
-                    { urls: "stun:stun.l.google.com:19302" }
-                ]
-            });
-        }
+        peers.current.forEach((pc) => {
+            pc.ontrack = null;
+            pc.onicecandidate = null;
+            pc.close();
+        });
+        peers.current.clear();
 
         // 4. Clear ICE queue
-        pendingCandidates.current.length = 0;
+        pendingCandidates.current.clear();
 
         // 5. Reset UI
         dispatch({ type: reason });
@@ -276,50 +254,48 @@ export const CallProvider = ({ children }) => {
 
     // ---- socket handlers ----
 
-    const handleIce = async ({ candidate }) => {
+    const handleIce = async ({ from, candidate }) => {
         // if (state.status !== CALL_STATE.RINGING &&
         //     state.status !== CALL_STATE.CONNECTING &&
         //     state.status !== CALL_STATE.CONNECTED) {
         //     return
         // }
         try {
-            if (!candidate) return; // ✅ ignore end-of-candidates
+            const pc = peers.current.get(from);
+            if (!pc) return;
+            // const pc = peers.current.values().next().value;
+            if (!candidate) return;
 
-
-            if (pc.current.remoteDescription) {
-                await pc.current.addIceCandidate(candidate);
+            if (pc.remoteDescription) {
+                await pc.addIceCandidate(candidate);
             } else {
-                pendingCandidates.current.push(candidate);
+                // pendingCandidates.current.push(candidate);
+                if (!pendingCandidates.current.has(from)) {
+                    pendingCandidates.current.set(from, []);
+                }
+                pendingCandidates.current.get(from).push(candidate);
             }
         } catch (err) {
             console.error("ICE error:", err);
         }
     };
     const handleIncoming = async ({ user, offer, type }) => {
-        // 🔥 ALWAYS create fresh pc here
-        if (pc.current) {
-            try { pc.current.close(); } catch { }
-        }
-
-        pc.current = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-        });
-
-        // set handlers ONCE here
-        pc.current.ontrack = (event) => {
-            if (remoteVideo.current) {
-                remoteVideo.current.srcObject = event.streams[0];
-            }
-        };
-
-        pc.current.onicecandidate = (event) => {
-            if (event.candidate) {
+        const pc = createPeerConnection({
+            onTrack: (event) => {
+                setRemoteStreams(prev => ({
+                    ...prev,
+                    [user.id]: event.streams[0]
+                }));
+            },
+            onIce: (candidate) => {
                 socket.emit("ice-candidate", {
-                    to: user.id,
-                    candidate: event.candidate,
+                    to: user?.id,
+                    candidate,
                 });
             }
-        };
+        });
+
+        peers.current.set(user.id, pc)
 
         dispatch({
             type: "INCOMING",
@@ -331,13 +307,14 @@ export const CallProvider = ({ children }) => {
 
 
 
-    const handleAccepted = async ({ answer }) => {
+    const handleAccepted = async ({ from, answer }) => {
         if (state.status !== CALL_STATE.OUTGOING) {
             return;
         }
         dispatch({ type: "CONNECTING" })
 
-        const pcInstance = pc.current;
+        const pcInstance = peers.current.get(from);
+        // const pcInstance = peers.current.values().next().value;;
 
         // 1. Guard: connection must exist and be open
         if (!pcInstance || pcInstance.signalingState === "closed") {
@@ -345,14 +322,13 @@ export const CallProvider = ({ children }) => {
             return;
         }
 
-
-
         try {
             // Ensure remote stream handler
             pcInstance.ontrack = (event) => {
-                if (remoteVideo.current) {
-                    remoteVideo.current.srcObject = event.streams[0];
-                }
+                setRemoteStreams(prev => ({
+                    ...prev,
+                    [from]: event.streams[0]
+                }))
             };
 
             // 2. Avoid setting remote description twice
@@ -364,15 +340,15 @@ export const CallProvider = ({ children }) => {
             dispatch({ type: "CONNECTING" });
 
             // 3. Flush ICE queue safely
-            for (const c of pendingCandidates.current) {
+            const candidates = pendingCandidates.current.get(from) || [];
+            for (const c of candidates) {
                 try {
                     await pcInstance.addIceCandidate(c);
-                } catch (err) {
-                    console.warn("Failed to add ICE candidate", err);
+                } catch (error) {
+                    console.warn("Failed to add ICE candidate", error);
                 }
             }
-            // 4. Clear queue properly
-            pendingCandidates.current.length = 0;
+            pendingCandidates.current.delete(from);
 
             dispatch({ type: "CONNECTED" });
         } catch (err) {
@@ -454,7 +430,7 @@ export const CallProvider = ({ children }) => {
 
 
     return (
-        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteVideo, isMuted, toggleMute, isVideo, toggleVideo }}>
+        <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo }}>
             {children}
 
             {/* GLOBAL UI */}

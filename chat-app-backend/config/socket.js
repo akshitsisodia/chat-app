@@ -61,7 +61,7 @@ const initSocket = (server) => {
     //! for Streaming
     // connect users
     socket.on("ice-candidate", ({ to, candidate }) => {
-      io.to(to).emit("ice-candidate", { candidate });
+      io.to(to).emit("ice-candidate", { from: socket.user.id, candidate });
     });
 
     // receive call request
@@ -76,7 +76,7 @@ const initSocket = (server) => {
 
     // send Answer to caller
     socket.on("answer-call", ({ to, answer }) => {
-      io.to(to).emit("call-accepted", { answer });
+      io.to(to).emit("call-accepted", { from: socket.user.id, answer });
     });
 
     // send reject to caller

@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { FaMicrophone, FaPause } from 'react-icons/fa6';
 import encryptFile from '../../Util/encrypt/encryptFile';
+import encryptGroupFile from '../../Util/encrypt/encryptGroupFile';
+import { encryptMessage } from '../../Hooks/useEncryptMessage';
+import { encryptGroupMessage } from '../../Util/crypto';
 
-function AudioRecordingButton({ receiver, setFiles, isRecording, setAudioUrl, setIsRecording, setChooseFile }) {
+function uint8ArrayToBase64(arr) {
+    return btoa(String.fromCharCode(...arr));
+}
+
+function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, setIsRecording, setChooseFile, isGroup = false, groupId }) {
     const streamRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
@@ -52,17 +59,34 @@ function AudioRecordingButton({ receiver, setFiles, isRecording, setAudioUrl, se
                 }
 
                 const formData = new FormData();
+                let defaultContent = "Audio Message";
 
-                const { encryptedBlob, encryptedKey, nonce, iv } =
-                    await encryptFile(file, receiver?.public_key);
+                if (isGroup) {
+                    const { encryptedBlob, iv } = await encryptGroupFile(groupId, file, public_key);
 
-                formData.append("files", encryptedBlob);
-                formData.append("keys", encryptedKey);
-                formData.append("nonces", nonce);
-                formData.append("ivs", iv);
-                formData.append("types", file.type);
-                formData.append("names", file.name);
+                    formData.append("files", encryptedBlob);
+                    formData.append("ivs", iv);
+                    formData.append("types", file.type);
+                    formData.append("names", file.name);
 
+                    const encryptedData = await encryptGroupMessage(public_key, defaultContent);
+
+                    formData.append("content", uint8ArrayToBase64(new Uint8Array(encryptedData.ciphertext)));
+                    formData.append("nonce", uint8ArrayToBase64(new Uint8Array(encryptedData.iv)));
+                } else {
+                    const { encryptedBlob, encryptedKey, nonce, iv } = await encryptFile(file, public_key);
+
+                    formData.append("files", encryptedBlob);
+                    formData.append("keys", encryptedKey);
+                    formData.append("nonces", nonce);
+                    formData.append("ivs", iv);
+                    formData.append("types", file.type);
+                    formData.append("names", file.name);
+
+                    const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), receiver?.public_key);
+                    formData.append("content", encryptedData.encrypted);
+                    formData.append("nonce", encryptedData.nonce);
+                }
                 setFiles(formData);
             };
 

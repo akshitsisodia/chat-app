@@ -3,31 +3,42 @@ import { decryptFile } from "../../Hooks/useEncryptFiles";
 import Loading from "./Loading";
 import { getCachedKey } from "../../Util/CachesKeyMap";
 import base64ToUint8Array from "../../Util/base64ToUint8Array";
+import { FaExclamation } from "react-icons/fa";
 
-function GroupFilePreview({ file, chatId, receiver, imageButtonClicked }) {
+function GroupFilePreview({ file, groupKey, imageButtonClicked }) {
 
     const [url, setUrl] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const loadFile = async () => {
             const privateKey = localStorage.getItem("privateKey");
-            const key = await getCachedKey(chatId);
+            const key = groupKey;
             if (!key) {
                 console.warn("Key not ready yet");
                 return;
             }
             if (!privateKey) return;
+
             const res = await fetch(file.url);
             const encryptedBuffer = await res.arrayBuffer();
-            const decrypted = await crypto.subtle.decrypt(
-                {
-                    name: "AES-GCM",
-                    iv: base64ToUint8Array(file.iv),
-                },
-                key,
-                encryptedBuffer,
-            );
 
+
+            let decrypted;
+            try {
+                decrypted = await crypto.subtle.decrypt(
+                    {
+                        name: "AES-GCM",
+                        iv: base64ToUint8Array(file.iv),
+                    },
+                    key,
+                    encryptedBuffer,
+                );
+            } catch (error) {
+                console.log("Decryption failed, possibly due to wrong key or corrupted data", error);
+                setError("Failed to decrypt file");
+                return;
+            }
 
             if (!decrypted) return;
 
@@ -45,6 +56,7 @@ function GroupFilePreview({ file, chatId, receiver, imageButtonClicked }) {
     }, [file]);
 
 
+    if (error) return <div className="file-error" style={{ padding: ".5rem" }}><FaExclamation color="var(--danger-color)" />{error}</div>;
     if (!url) return <Loading />;
 
     // 📷 Image

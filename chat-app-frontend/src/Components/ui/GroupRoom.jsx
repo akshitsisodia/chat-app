@@ -14,6 +14,10 @@ import { useSocket } from "../../Context/SocketContext";
 
 function GroupRoom({ activeId }) {
     const { chats } = useChats()
+
+    const bottomRef = useRef(null);
+
+
     const chat = chats?.filter(curr => curr.chat_id === activeId)
 
     const queryClient = useQueryClient();
@@ -134,6 +138,10 @@ function GroupRoom({ activeId }) {
         return () => socket.off("updateSeen", handler)
     }, [queryClient, activeId])
 
+    useEffect(() => {
+        bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
+    }, [content, activeId]);
+
     return (
         <div className="chat">
             {/* head  */}
@@ -147,7 +155,7 @@ function GroupRoom({ activeId }) {
 
             {/* main  */}
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>
-                <GroupMessages receivers={receivers} id={activeId} content={content} messages={messages} />
+                <GroupMessages bottomRef={bottomRef} receivers={receivers} id={activeId} content={content} messages={messages} />
                 {isFetchingNextPage || !scroll && <div className="loader"></div>}
                 {/* <br /> */}
                 {/* {messages.length < 20 && <ProfileUserDetails user={receiver} />} */}

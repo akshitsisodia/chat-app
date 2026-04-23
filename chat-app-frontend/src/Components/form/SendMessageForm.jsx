@@ -18,12 +18,15 @@ import encryptFile from "../../Util/encrypt/encryptFile";
 function SendMessageForm({ id, receiver, content, setContent }) {
     const { logout } = useAuth();
     const { socket } = useSocket();
+
+    const inputRef = useRef();
+
     const [chooseFile, setChooseFile] = useState(false);
     const [files, setFiles] = useState(null);
-    const [startRecord, setStartRecord] = useState(false);
-
     const [isRecording, setIsRecording] = useState(false);
     const [audioUrl, setAudioUrl] = useState("");
+
+    // const [startRecord, setStartRecord] = useState(false);
 
     const uploadMutation = useUploadMutation({ setFiles, setAudioUrl })
 
@@ -34,9 +37,12 @@ function SendMessageForm({ id, receiver, content, setContent }) {
     const fileInputHandler = async (e) => {
         const files = e.target.files;
         const formData = new FormData();
+        let defaultContent
+
 
         for (let file of files) {
             const { encryptedBlob, encryptedKey, nonce, iv } = await encryptFile(file, receiver?.public_key);
+
             // Append everything to formData
             formData.append("files", encryptedBlob);
             formData.append("keys", encryptedKey);
@@ -44,7 +50,19 @@ function SendMessageForm({ id, receiver, content, setContent }) {
             formData.append("ivs", iv);
             formData.append("types", file.type);
             formData.append("names", file.name);
+
+            if (file.type.startsWith("image/")) {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Images" : "Image") : content;
+            } else if (file.type.startsWith("video/")) {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Videos" : "Video") : content;
+            } else {
+                defaultContent = content.length === 0 ? (files.length > 1 ? "Files" : "File") : content;
+            }
         }
+
+        const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), receiver?.public_key);
+        formData.append("content", encryptedData.encrypted);
+        formData.append("nonce", encryptedData.nonce);
 
         setFiles(formData)
 
@@ -105,8 +123,9 @@ function SendMessageForm({ id, receiver, content, setContent }) {
         socket.emit("sendMessage", data)
 
         setContent("")
-
         document.getElementById("preview").innerHTML = "";
+        inputRef.current?.focus();
+        // inputRef?.current?.scrollIntoView({ behavior: "smooth" });
     }
 
     const handleKeyDown = (e) => {
@@ -126,8 +145,8 @@ function SendMessageForm({ id, receiver, content, setContent }) {
             <div className="sendMessageForm-main" >
                 <div className="sendMessageForm-inputs">
                     {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
-                    {!isRecording && <textarea type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
-                    <AudioRecordingButton receiver={receiver} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} />
+                    {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
+                    <AudioRecordingButton public_key={receiver?.public_key} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} />
                 </div>
 
                 <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending || isRecording} >

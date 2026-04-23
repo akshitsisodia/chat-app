@@ -19,8 +19,8 @@ function ChatCard({ data }) {
     let content
     if (data?.last_message) {
         content = decryptMessage(data?.last_message, data?.nonce, data?.public_key, privateKey);
-        if (content.length > 30) {
-            content = content.substring(0, 30) + "..."
+        if (content.length > 14) {
+            content = content.substring(0, 14) + "..."
         }
     }
 

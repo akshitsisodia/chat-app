@@ -1,0 +1,2 @@
+-- DELETE FROM messages
+-- WHERE chat_id = 'd72c3dc8-1e91-4e21-8d81-f8972efb7b74' ;

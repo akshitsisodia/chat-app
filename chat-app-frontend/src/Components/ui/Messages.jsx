@@ -33,10 +33,7 @@ function Messages({ id, receiver, content, messages }) {
                 return (
                     <div key={curr.id} className="messages">
                         <div className={curr.sender_id === me.id ? "messages-send-container" : "messages-receive-container"}>
-                            {/* load files  */}
-                            {/* {curr?.files?.length > 0 && <FilesList data={curr.files} public_key={receiver.public_key} imageButtonClicked={imageButtonClicked} />} */}
-                            {/* load message  */}
-                            {/* {curr.content && <> */}
+
                             {/* {curr.sender_id === me.id && <FaCheckDouble className="not-seen" color={curr.seen ? "#00d0ff" : ""} />} */}
                             {curr.sender_id === me.id
                                 ?
@@ -49,11 +46,10 @@ function Messages({ id, receiver, content, messages }) {
                                 :
                                 <>
                                     {/* <IncommingCard /> */}
-                                    {<img className="message-receiver-image" src={me.photo} alt="" />}
+                                    {<img className="message-receiver-image" src={receiver.photo} alt="" />}
                                     <ReceiveMessageCard sender={receiver} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
                                 </>
                             }
-                            {/* </>} */}
 
 
                         </div>

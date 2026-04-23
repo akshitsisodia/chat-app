@@ -129,8 +129,9 @@
   background-color: #fff;
   box-shadow: 0 0 2px #0005;
   border-radius: 10px;
-  width: fit-content;
+  /* width: fit-content; */
   width: 100%;
+  text-align: center;
 
   & button {
     border-radius: 10px;
@@ -199,6 +200,7 @@
 .pdf-container-link {
   display: flex;
   flex-direction: column;
+  /* min-width: 200px; */
   & span {
     background-color: #eee;
     border-top-left-radius: 10px;

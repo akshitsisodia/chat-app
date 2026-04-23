@@ -6,9 +6,9 @@ function FilesList({ data, public_key, imageButtonClicked }) {
         <ul className="messages-media-list">
             {data.map((obj, i) => {
                 return (
-                    <li className="pdf-container" key={i}>
+                    <div className="pdf-container" key={i}>
                         < FilePreview file={obj} senderPublicKey={public_key} imageButtonClicked={imageButtonClicked} />
-                    </li>
+                    </div>
                 )
             })}
 

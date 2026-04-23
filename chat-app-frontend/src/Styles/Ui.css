@@ -125,16 +125,12 @@
 .messages-media-list {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.2rem;
   border-radius: 10px;
   width: 100%;
 
-  & li {
-    box-sizing: border-box;
-    padding: 4px 4px 0 4px;
-    /* width: fit-content; */
-  }
   & img {
     border-radius: 10px;
     width: 100px;

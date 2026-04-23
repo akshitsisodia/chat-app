@@ -5,10 +5,7 @@ import { useCall } from '../../Context/CallContext'
 
 function CallingScreen({ isCalling = true, isVideoCall }) {
     const [isMaximize, setIsMaximize] = useState(false)
-    const { state, isMuted, toggleMute, isVideo, toggleVideo, myVideo, remoteVideo, endCall } = useCall()
-
-    // Use prop isVideoCall if provided, otherwise use context isVideo
-    const videoEnabled = isVideoCall !== undefined ? isVideoCall : isVideo;
+    const { state, isMuted, toggleMute, isVideo, toggleVideo, myVideo, remoteStreams, endCall } = useCall()
 
     const [second, setSecond] = useState(0);
     const [minute, setMinute] = useState(0);
@@ -47,6 +44,7 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
 
                 <div className="videocall-interface-buttons">
                     {/* {isVideoCall && <button
+                    
                         type="button"
                         className="videocall-other-button"
                         onClick={() => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
@@ -71,6 +69,8 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                 </div>
             </div>
 
+
+
             <button
                 type="button"
                 onClick={isMaximize ? () => { } : () => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
@@ -80,13 +80,30 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
             >
                 <video ref={myVideo} autoPlay muted />
             </button >
-            <button
+            {/* <button
                 type="button"
                 onClick={!isMaximize ? () => { } : () => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
                 className={(!isMaximize ? "videocall-max" : "videocall-min")}
             >
                 <video ref={remoteVideo} autoPlay />
-            </button>
+            </button> */}
+            <div className="videocall-grid">
+                <div className={(!isMaximize ? "videocall-max" : "videocall-min")}>
+                    {Object.entries(remoteStreams || {}).map(([id, stream]) => (
+                        <video
+                            key={id}
+                            autoPlay
+                            playsInline
+                            ref={(el) => {
+                                if (el && el.srcObject !== stream) {
+                                    el.srcObject = stream;
+                                }
+                            }}
+                        />
+                    ))}
+                </div>
+            </div>
+
         </>
     )
 }

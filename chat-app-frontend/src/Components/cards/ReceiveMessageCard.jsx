@@ -5,6 +5,7 @@ import { FaCheckDouble } from "react-icons/fa6";
 
 function ReceiveMessageCard({ message, nonce, sender, data, imageButtonClicked }) {
 
+  
   let content;
   if (message) {
     content = decryptMessage(message, nonce, sender?.public_key, localStorage.getItem("privateKey"))
