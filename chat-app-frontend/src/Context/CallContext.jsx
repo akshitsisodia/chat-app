@@ -41,6 +41,9 @@ function callReducer(state, action) {
         case "CONNECTED":
             return { ...state, status: CALL_STATE.CONNECTED };
 
+        case "ONGOING":
+            return { ...state, status: CALL_STATE.RECONNECTING };
+
         case "RECONNECTING":
             return { ...state, status: CALL_STATE.RECONNECTING, callType: action.callType };
 
@@ -342,11 +345,15 @@ export const CallProvider = ({ children }) => {
 
     const handleReconnect = async ({ participants, callType }) => {
 
-        console.log("participants", participants, "callType", callType)
         dispatch({ type: "RECONNECTING", callType });
         setParticipants(participants);
 
         const stream = await getMedia(callType === "video");
+        if (myVideo.current) myVideo.current.srcObject = stream;
+
+        const saved = JSON.parse(localStorage.getItem("ongoingCall"));
+        if (!saved) return;
+
 
         for (const userId of participants) {
             if (peers.current.has(userId)) {
@@ -361,8 +368,8 @@ export const CallProvider = ({ children }) => {
                 onIce: (candidate) => {
                     socket.emit("ice-candidate", {
                         to: userId,
+                        callId: saved.callId,
                         candidate,
-                        callId
                     });
                 }
             });
@@ -376,8 +383,8 @@ export const CallProvider = ({ children }) => {
 
             socket.emit("reconnect-offer", {
                 to: userId,
+                callId: saved.callId,
                 offer,
-                callId
             });
         }
     }
@@ -544,9 +551,11 @@ export const CallProvider = ({ children }) => {
         const saved = JSON.parse(localStorage.getItem("ongoingCall"));
         if (!saved) return;
 
+
         setCallId(saved.callId);
         setParticipants(saved.participants);
         console.log(saved.callId)
+        dispatch({ type: "ONGOING" })
 
         socket.emit("reconnect-call", {
             callId: saved.callId

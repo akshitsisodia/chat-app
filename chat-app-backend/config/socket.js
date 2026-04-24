@@ -180,9 +180,12 @@ const initSocket = (server) => {
       const userId = socket.user.id;
 
       setTimeout(() => {
-        // ✅ if user reconnected, skip removal
-        if (connectedUsers.get(userId)) {
-          console.log("User reconnected, skipping removal:", userId);
+        // if user reconnected, skip removal
+        if (connectedUsers.get(userId) !== socket.id) {
+          console.log(
+            "User reconnected with new socket, skipping removal:",
+            userId,
+          );
           return;
         }
 
