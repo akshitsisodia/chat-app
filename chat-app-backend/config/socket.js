@@ -104,7 +104,9 @@ const initSocket = (server) => {
       const call = activeCalls[callId];
       console.log(call);
 
-      if (!call || !call.participants.includes(socket.user.id)) return;
+      console.log(socket.user.id);
+      if (!call) return;
+      // if (!call.participants.includes(socket.user.id)) return;
       console.log("here");
 
       const others = call.participants.filter((id) => id !== socket.user.id);
