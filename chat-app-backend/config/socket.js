@@ -11,6 +11,7 @@ const UserModel = require("../models/user.model");
 
 let io;
 const activeCalls = {};
+const connectedUsers = new Map();
 
 const initSocket = (server) => {
   io = new Server(server);
@@ -48,7 +49,8 @@ const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     socket.join(socket.user.id);
-    console.log(`${socket.user.name} Connected`, socket.id);
+    connectedUsers.set(socket.user.id, socket.id);
+    // console.log(`${socket.user.name} Connected`, socket.id);
 
     socket.on("joinChat", async (chatId) => {
       socket.join(chatId);
@@ -75,10 +77,17 @@ const initSocket = (server) => {
     // receive call request
     socket.on("call-user", ({ to, offer, type, callId }) => {
       // create call session
-      activeCalls[callId] = {
-        participants: [...new Set([socket.user.id, to])],
-        callType: type,
-      };
+      if (!activeCalls[callId]) {
+        activeCalls[callId] = {
+          participants: [socket.user.id, to],
+          callType: type,
+        };
+      } else {
+        const call = activeCalls[callId];
+        call.participants = [
+          ...new Set([...call.participants, socket.user.id, to]),
+        ];
+      }
 
       io.to(to).emit("incoming-call", {
         // from: socket.id,
@@ -100,19 +109,15 @@ const initSocket = (server) => {
     });
 
     socket.on("reconnect-call", ({ callId }) => {
-      console.log(callId);
       const call = activeCalls[callId];
-      console.log(call);
 
-      console.log(socket.user.id);
       if (!call) return;
-      // if (!call.participants.includes(socket.user.id)) return;
-      console.log("here");
+      if (!call.participants.includes(socket.user.id)) return;
 
       const others = call.participants.filter((id) => id !== socket.user.id);
 
-      // using socket.to() will send to self, so not using io.to() here
-      io.to(socket.user.id).emit("reconnect-participants", {
+      // using socket will send to self, so not using io.to() here
+      socket.emit("reconnect-participants", {
         participants: others,
         callType: call.callType,
       });
@@ -130,6 +135,9 @@ const initSocket = (server) => {
     });
 
     socket.on("reconnect-answer", ({ to, answer, callId }) => {
+      const call = activeCalls[callId];
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
       io.to(to).emit("reconnect-answer", {
         from: socket.user.id,
         answer,
@@ -171,23 +179,34 @@ const initSocket = (server) => {
     socket.on("disconnect", () => {
       const userId = socket.user.id;
 
-      for (const callId in activeCalls) {
-        const call = activeCalls[callId];
+      setTimeout(() => {
+        // ✅ if user reconnected, skip removal
+        if (connectedUsers.get(userId)) {
+          console.log("User reconnected, skipping removal:", userId);
+          return;
+        }
 
-        if (call.participants.includes(userId)) {
-          call.participants = call.participants.filter((id) => id !== userId);
+        for (const callId in activeCalls) {
+          const call = activeCalls[callId];
 
-          // notify others
-          call.participants.forEach((id) => {
-            io.to(id).emit("user-left-call", { userId });
-          });
+          if (call.participants.includes(userId)) {
+            call.participants = call.participants.filter((id) => id !== userId);
 
-          // delete call if empty
-          if (call.participants.length === 0) {
-            delete activeCalls[callId];
+            // notify others
+            call.participants.forEach((id) => {
+              io.to(id).emit("user-left-call", { userId });
+            });
+
+            // delete call if empty
+            if (call.participants.length === 0) {
+              delete activeCalls[callId];
+            }
           }
         }
-      }
+      }, 5000); // ⏳ 5 seconds grace period
+
+      // ❗ mark user as disconnected
+      connectedUsers.delete(userId);
 
       console.log(`${socket?.user?.name} disconnected:`, socket.id);
     });
