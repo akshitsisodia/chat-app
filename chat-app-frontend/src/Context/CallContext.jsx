@@ -462,7 +462,10 @@ export const CallProvider = ({ children }) => {
 
         dispatch({ type: "RECONNECTED" });
     }
-
+    const callEndedHandler = () => {
+        console.log("Call no longer exists");
+        endCall("END", false);
+    }
     const handleUserLeaveCall = async ({ userId }) => {
         if (me?.id === userId) return
         console.log(`${userId} left call`);
@@ -525,6 +528,7 @@ export const CallProvider = ({ children }) => {
         socket.on("reconnect-participants", handleReconnect);
         socket.on("reconnect-offer", handleReconnectOffer);
         socket.on("reconnect-answer", handleReconnectAnswer);
+        socket.on("call-ended", callEndedHandler);
 
         socket.on("user-left-call", handleUserLeaveCall);
         socket.on("end-call", handleEndCall);
@@ -539,6 +543,8 @@ export const CallProvider = ({ children }) => {
             socket.off("reconnect-participants", handleReconnect);
             socket.off("reconnect-offer", handleReconnectOffer);
             socket.off("reconnect-answer", handleReconnectAnswer);
+            socket.off("call-ended", callEndedHandler);
+
 
             socket.off("user-left-call", handleUserLeaveCall);
             socket.off("end-call", handleEndCall);

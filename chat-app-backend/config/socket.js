@@ -111,8 +111,10 @@ const initSocket = (server) => {
     socket.on("reconnect-call", ({ callId }) => {
       const call = activeCalls[callId];
 
-      if (!call) return;
-      if (!call.participants.includes(socket.user.id)) return;
+      if (!call || !call.participants.includes(socket.user.id)) {
+        socket.emit("call-ended");
+        return;
+      }
 
       const others = call.participants.filter((id) => id !== socket.user.id);
 
