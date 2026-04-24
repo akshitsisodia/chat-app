@@ -246,7 +246,7 @@ export const CallProvider = ({ children }) => {
         dispatch({ type: reason });
 
         // 6. Notify other user
-        if (notify && state?.peer?.id) {
+        if (notify) {
             // socket?.emit("leave-call", { to: state.peer.id, callId });
             socket?.emit("leave-call", { callId });
         }
