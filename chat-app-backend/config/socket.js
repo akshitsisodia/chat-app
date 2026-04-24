@@ -10,6 +10,7 @@ const {
 const UserModel = require("../models/user.model");
 
 let io;
+const activeCalls = {};
 
 const initSocket = (server) => {
   io = new Server(server);
@@ -60,23 +61,34 @@ const initSocket = (server) => {
 
     //! for Streaming
     // connect users
-    socket.on("ice-candidate", ({ to, candidate }) => {
-      io.to(to).emit("ice-candidate", { from: socket.user.id, candidate });
+    socket.on("ice-candidate", ({ to, candidate, callId }) => {
+      io.to(to).emit("ice-candidate", {
+        from: socket.user.id,
+        candidate,
+        callId,
+      });
     });
 
     // receive call request
-    socket.on("call-user", ({ to, offer, type }) => {
+    socket.on("call-user", ({ to, offer, type, callId }) => {
+      // create call session
+      activeCalls[callId] = {
+        participants: [socket.user.id, to],
+        callType: type,
+      };
+
       io.to(to).emit("incoming-call", {
         // from: socket.id,
         user: socket.user,
         offer,
         type,
+        callId,
       });
     });
 
     // send Answer to caller
-    socket.on("answer-call", ({ to, answer }) => {
-      io.to(to).emit("call-accepted", { from: socket.user.id, answer });
+    socket.on("answer-call", ({ to, answer, callId }) => {
+      io.to(to).emit("call-accepted", { from: socket.user.id, answer, callId });
     });
 
     // send reject to caller
@@ -84,9 +96,63 @@ const initSocket = (server) => {
       io.to(to).emit("call-rejected");
     });
 
+    socket.on("reconnect-call", ({ callId }) => {
+      const call = activeCalls[callId];
+
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
+      const others = call.participants.filter((id) => id !== socket.user.id);
+
+      io.emit("reconnect-participants", {
+        participants: others,
+        callType: call.callType,
+      });
+    });
+
+    socket.on("reconnect-offer", ({ to, offer, callId }) => {
+      io.to(to).emit("reconnect-offer", {
+        from: socket.user.id,
+        callId,
+        offer,
+      });
+    });
+    
+    socket.on("reconnect-answer", ({ to, answer, callId }) => {
+      io.to(to).emit("reconnect-answer", {
+        from: socket.user.id,
+        answer,
+        callId,
+      });
+    });
+
+    socket.on("invite-to-call", ({ to, callId }) => {
+      const call = activeCalls[callId];
+      if (!call) return;
+
+      // add user if not already
+      if (!call.participants.includes(to)) {
+        call.participants.push(to);
+      }
+
+      io.to(to).emit("incoming-call", {
+        user: socket.user,
+        callId,
+        type: call.callType,
+        isInvite: true,
+      });
+    });
+
     // end call
     socket.on("end-call", ({ to }) => {
-      io.to(to).emit("end-call");
+      const call = activeCalls[callId];
+      if (!call) return;
+
+      call.participants.forEach((userId) => {
+        io.to(userId).emit("end-call");
+      });
+
+      // remove from memory
+      delete activeCalls[callId];
     });
 
     //! for Streaming
