@@ -132,9 +132,9 @@ export const CallProvider = ({ children }) => {
 
         socket?.emit("call-user", {
             to: user.id,
-            offer,
+            callId: newCallId,
             type: video ? "video" : "audio",
-            callId: newCallId
+            offer,
         });
     };
 
@@ -242,7 +242,7 @@ export const CallProvider = ({ children }) => {
 
         // 6. Notify other user
         if (notify && state?.peer?.id) {
-            socket?.emit("end-call", { to: state.peer.id });
+            socket?.emit("end-call", { to: state.peer.id, callId });
         }
 
         // 7. Clear localStorage
@@ -294,25 +294,25 @@ export const CallProvider = ({ children }) => {
             callType: type
         });
     };
-
     const handleAccepted = async ({ from, answer, callId: incomingCallId }) => {
+        console.log(callId, incomingCallId, "accepted")
         if (incomingCallId !== callId) return;
 
         const pc = peers.current.get(from);
         if (!pc) return;
 
-        // if (!pc || pc.signalingState === "closed") {
-        //     console.warn("PeerConnection is closed or missing");
-        //     return;
-        // }
+        if (!pc || pc.signalingState === "closed") {
+            console.warn("PeerConnection is closed or missing");
+            return;
+        }
 
 
-        // pc.ontrack = (event) => {
-        //     setRemoteStreams(prev => ({
-        //         ...prev,
-        //         [from]: event.streams[0]
-        //     }))
-        // };
+        pc.ontrack = (event) => {
+            setRemoteStreams(prev => ({
+                ...prev,
+                [from]: event.streams[0]
+            }))
+        };
 
         if (!pc.remoteDescription) {
             await pc.setRemoteDescription(answer);
@@ -341,6 +341,8 @@ export const CallProvider = ({ children }) => {
     }
 
     const handleReconnect = async ({ participants, callType }) => {
+
+        console.log("participants", participants, "callType", callType)
         dispatch({ type: "RECONNECTING", callType });
         setParticipants(participants);
 
@@ -451,7 +453,6 @@ export const CallProvider = ({ children }) => {
         dispatch({ type: "RECONNECTED" });
     }
 
-
     function handleEndCall() {
         dispatch({ type: "END" });
     }
@@ -485,8 +486,7 @@ export const CallProvider = ({ children }) => {
             socket.off("end-call", handleEndCall);
         };
 
-    }, [socket])
-    // }, [socket, state.status])
+    }, [socket, state.status]);
 
     useEffect(() => {
         let timer;
@@ -546,11 +546,13 @@ export const CallProvider = ({ children }) => {
 
         setCallId(saved.callId);
         setParticipants(saved.participants);
+        console.log(saved.callId)
 
         socket.emit("reconnect-call", {
             callId: saved.callId
         });
     }, [socket]);
+    console.log(state)
     return (
         <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo }}>
             {children}

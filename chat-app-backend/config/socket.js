@@ -107,7 +107,7 @@ const initSocket = (server) => {
       const others = call.participants.filter((id) => id !== socket.user.id);
 
       // using socket.to() will send to self, so not using io.to() here
-      socket.emit("reconnect-participants", {
+      io.to(socket.user.id).emit("reconnect-participants", {
         participants: others,
         callType: call.callType,
       });
