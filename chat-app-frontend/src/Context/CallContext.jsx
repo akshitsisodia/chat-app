@@ -7,6 +7,7 @@ import CallingScreen from "../Components/ui/CallingScreen";
 import "../Styles/VideoCall.css";
 import { useSocket } from "./SocketContext";
 import createPeerConnection from "../webrtc/peer";
+import { useAuth } from "./AuthContext";
 
 const CallContext = createContext();
 
@@ -65,6 +66,7 @@ function callReducer(state, action) {
 
 export const CallProvider = ({ children }) => {
     const { socket } = useSocket();
+    const { me } = useAuth();
 
     const [state, dispatch] = useReducer(callReducer, initialState);
 
@@ -245,7 +247,8 @@ export const CallProvider = ({ children }) => {
 
         // 6. Notify other user
         if (notify && state?.peer?.id) {
-            socket?.emit("end-call", { to: state.peer.id, callId });
+            // socket?.emit("leave-call", { to: state.peer.id, callId });
+            socket?.emit("leave-call", { callId });
         }
 
         // 7. Clear localStorage
@@ -460,6 +463,52 @@ export const CallProvider = ({ children }) => {
         dispatch({ type: "RECONNECTED" });
     }
 
+    const handleUserLeaveCall = async ({ userId }) => {
+        if (me?.id === userId) return
+        console.log(`${userId} left call`);
+
+        // 1. Close peer connection
+        if (peers.current.has(userId)) {
+            const pc = peers.current.get(userId);
+
+            try {
+                pc.ontrack = null;
+                pc.onicecandidate = null;
+                pc.close();
+            } catch (err) {
+                console.warn("Error closing peer:", err);
+            }
+
+            peers.current.delete(userId);
+        }
+
+        // 2. Remove remote stream
+        setRemoteStreams(prev => {
+            const updated = { ...prev };
+            delete updated[userId];
+            return updated;
+        });
+
+        // 3. Remove pending ICE candidates
+        if (pendingCandidates.current.has(userId)) {
+            pendingCandidates.current.delete(userId);
+        }
+
+        // 4. Update participants
+        setParticipants(prev => prev.filter(id => id !== userId));
+
+        // 5. Optional: UI feedback
+        // (you can show "User left" toast here)
+
+        // 6. Safety: if no one left, reset UI
+        const remainingPeers = peers.current.size;
+
+        if (remainingPeers === 0) {
+            console.log("No peers left, ending call");
+            endCall("END", false); // full cleanup
+        }
+    };
+
     function handleEndCall() {
         dispatch({ type: "END" });
     }
@@ -477,6 +526,7 @@ export const CallProvider = ({ children }) => {
         socket.on("reconnect-offer", handleReconnectOffer);
         socket.on("reconnect-answer", handleReconnectAnswer);
 
+        socket.on("user-left-call", handleUserLeaveCall);
         socket.on("end-call", handleEndCall);
 
         return () => {
@@ -490,6 +540,7 @@ export const CallProvider = ({ children }) => {
             socket.off("reconnect-offer", handleReconnectOffer);
             socket.off("reconnect-answer", handleReconnectAnswer);
 
+            socket.off("user-left-call", handleUserLeaveCall);
             socket.off("end-call", handleEndCall);
         };
 

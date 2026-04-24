@@ -147,7 +147,7 @@ const initSocket = (server) => {
 
     socket.on("invite-to-call", ({ to, callId }) => {
       const call = activeCalls[callId];
-      if (!call) return;
+      if (!call || !call.participants.includes(socket.user.id)) return;
 
       // add user if not already
       if (!call.participants.includes(to)) {
@@ -162,18 +162,48 @@ const initSocket = (server) => {
       });
     });
 
-    // end call
-    socket.on("end-call", ({ to, callId }) => {
+    socket.on("leave-call", ({ callId }) => {
       const call = activeCalls[callId];
       if (!call) return;
 
-      call.participants.forEach((userId) => {
-        io.to(userId).emit("end-call");
+      const userId = socket.user.id;
+
+      if (!call.participants.includes(userId)) return;
+
+      // remove user
+      call.participants = call.participants.filter((id) => id !== userId);
+
+      // notify others
+      call.participants.forEach((id) => {
+        io.to(id).emit("user-left-call", { userId });
       });
 
-      // remove from memory
-      delete activeCalls[callId];
+      // ✅ handle remaining users
+      if (call.participants.length === 1) {
+        const lastUser = call.participants[0];
+
+        io.to(lastUser).emit("end-call");
+        delete activeCalls[callId];
+        return;
+      }
+
+      if (call.participants.length === 0) {
+        delete activeCalls[callId];
+      }
     });
+
+    // // end call
+    // socket.on("end-call", ({ to, callId }) => {
+    //   const call = activeCalls[callId];
+    //   if (!call) return;
+
+    //   call.participants.forEach((userId) => {
+    //     io.to(userId).emit("end-call");
+    //   });
+
+    //   // remove from memory
+    //   delete activeCalls[callId];
+    // });
 
     //! for Streaming
     socket.on("disconnect", () => {
@@ -195,10 +225,22 @@ const initSocket = (server) => {
           if (call.participants.includes(userId)) {
             call.participants = call.participants.filter((id) => id !== userId);
 
+            const remaining = call.participants;
+
             // notify others
-            call.participants.forEach((id) => {
+            remaining.forEach((id) => {
               io.to(id).emit("user-left-call", { userId });
             });
+
+            // if only one left → end call
+            if (remaining.length === 1) {
+              const lastUser = remaining[0];
+
+              io.to(lastUser).emit("end-call");
+
+              delete activeCalls[callId];
+              return;
+            }
 
             // delete call if empty
             if (call.participants.length === 0) {
