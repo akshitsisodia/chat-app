@@ -62,6 +62,9 @@ const initSocket = (server) => {
     //! for Streaming
     // connect users
     socket.on("ice-candidate", ({ to, candidate, callId }) => {
+      const call = activeCalls[callId];
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
       io.to(to).emit("ice-candidate", {
         from: socket.user.id,
         candidate,
@@ -73,7 +76,7 @@ const initSocket = (server) => {
     socket.on("call-user", ({ to, offer, type, callId }) => {
       // create call session
       activeCalls[callId] = {
-        participants: [socket.user.id, to],
+        participants: [...new Set([socket.user.id, to])],
         callType: type,
       };
 
@@ -103,20 +106,24 @@ const initSocket = (server) => {
 
       const others = call.participants.filter((id) => id !== socket.user.id);
 
-      io.emit("reconnect-participants", {
+      // using socket.to() will send to self, so not using io.to() here
+      socket.emit("reconnect-participants", {
         participants: others,
         callType: call.callType,
       });
     });
 
     socket.on("reconnect-offer", ({ to, offer, callId }) => {
+      const call = activeCalls[callId];
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
       io.to(to).emit("reconnect-offer", {
         from: socket.user.id,
         callId,
         offer,
       });
     });
-    
+
     socket.on("reconnect-answer", ({ to, answer, callId }) => {
       io.to(to).emit("reconnect-answer", {
         from: socket.user.id,
@@ -143,7 +150,7 @@ const initSocket = (server) => {
     });
 
     // end call
-    socket.on("end-call", ({ to }) => {
+    socket.on("end-call", ({ to, callId }) => {
       const call = activeCalls[callId];
       if (!call) return;
 
@@ -157,6 +164,26 @@ const initSocket = (server) => {
 
     //! for Streaming
     socket.on("disconnect", () => {
+      const userId = socket.user.id;
+
+      for (const callId in activeCalls) {
+        const call = activeCalls[callId];
+
+        if (call.participants.includes(userId)) {
+          call.participants = call.participants.filter((id) => id !== userId);
+
+          // notify others
+          call.participants.forEach((id) => {
+            io.to(id).emit("user-left-call", { userId });
+          });
+
+          // delete call if empty
+          if (call.participants.length === 0) {
+            delete activeCalls[callId];
+          }
+        }
+      }
+
       console.log(`${socket?.user?.name} disconnected:`, socket.id);
     });
   });
