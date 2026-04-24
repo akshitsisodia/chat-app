@@ -559,7 +559,7 @@ export const CallProvider = ({ children }) => {
             {state.status === CALL_STATE.RINGING && <IncomingCall caller={state?.peer} isVideo={state?.callType === "video" ? true : false} acceptCall={acceptCall} rejectCall={rejectCall} />}
             {/* {state.status === CALL_STATE.CONNECTED && <VideoCallUI />} */}
 
-            {(state.status === CALL_STATE.OUTGOING || CALL_STATE.CONNECTING || CALL_STATE.CONNECTED || CALL_STATE.RECONNECTED || CALL_STATE.RECONNECTING)
+            {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.RECONNECTED || state.status === CALL_STATE.RECONNECTING)
                 &&
                 <CallingScreen isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} isVideoCall={state?.callType === "video" ? true : false} />
             }
