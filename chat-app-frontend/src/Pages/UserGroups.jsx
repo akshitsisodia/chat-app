@@ -6,9 +6,11 @@ import NoChat from '../Components/ui/NoChat'
 function UserGroups() {
     return (
         <Layout >
-            <Groups />
-            <div className="prevChats-chat-page">
-                <NoChat />
+            <div className="prev-chats">
+                <Groups />
+                <div className="prevChats-chat-page">
+                    <NoChat />
+                </div>
             </div>
         </Layout >
     )

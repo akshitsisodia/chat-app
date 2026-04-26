@@ -7,6 +7,9 @@
 .chat-profile::-webkit-scrollbar {
   display: none;
 }
+.chat-profile-header{
+  padding: 0 1rem;
+}
 .profile-top {
   width: 100%;
   display: flex;

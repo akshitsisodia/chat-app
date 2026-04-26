@@ -6,9 +6,11 @@ function PreviousChats() {
 
   return (
     <Layout>
-      <Chats />
-      <div className="prevChats-chat-page">
-        <NoChat />
+      <div className="prev-chats">
+        <Chats />
+        <div className="prevChats-chat-page">
+          <NoChat />
+        </div>
       </div>
     </Layout>
   )

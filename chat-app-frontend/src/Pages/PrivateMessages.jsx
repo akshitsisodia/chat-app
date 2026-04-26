@@ -8,11 +8,13 @@ function PrivateMessages() {
 
   return (
     <Layout>
-      <div className="privateMessage-prevChats-page">
-        <Chats activeId={id} />
-      </div>
-      <div className="privateMessage-chat-page">
-        <Chat id={id} />
+      <div className="private-messages">
+        <div className="privateMessage-prevChats-page">
+          <Chats activeId={id} />
+        </div>
+        <div className="privateMessage-chat-page">
+          <Chat id={id} />
+        </div>
       </div>
     </Layout>
   )

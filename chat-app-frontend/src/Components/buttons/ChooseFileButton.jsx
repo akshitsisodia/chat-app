@@ -21,7 +21,7 @@ function ChooseFileButton({ fileInputHandler, chooseFile, setChooseFile }) {
                 </label>
 
             </div>}
-            <button type="button" className="sendMessageForm-files-button" onClick={() => setChooseFile(prev => prev === false ? true : false)}><FaPlus color="#333" /></button>
+            <button type="button" className="sendMessageForm-files-button" onClick={() => setChooseFile(prev => prev === false ? true : false)}><FaPlus /></button>
         </div>
 
     )

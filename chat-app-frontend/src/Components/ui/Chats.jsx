@@ -124,13 +124,13 @@ function Chats({ activeId }) {
     if (isLoading) return <Loading />
     return (
         <div className="chats">
-            <h2 className="chats-heading">Messages</h2>
+            <h1 className="chats-heading">Messages</h1>
 
-            <div className="chats-buttons-container">
-                <div className="chats-buttons">
-                    <button type='button' className="chats-go-button chats-go-button-active">General <span style={{ color: "#ccc" }}>{chats.length}</span></button>
-                    <button type='button' className="chats-go-button">Archive</button>
-                </div>
+            <div className="chats-buttons">
+                <button type='button' className="chats-go-button chats-go-button-active">
+                    <p>General <span style={{ color: "#ccc" }}>{chats.length}</span></p>
+                </button>
+                <button type='button' className="chats-go-button">Archive</button>
             </div>
 
             <button type="button" className="chats-search-button" onClick={() => navigate('/users')}>

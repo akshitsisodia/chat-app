@@ -618,7 +618,7 @@ export const CallProvider = ({ children }) => {
             callId: saved.callId
         });
     }, [socket]);
-    console.log(state)
+    // console.log(state)
     return (
         <CallContext.Provider value={{ state, callUser, acceptCall, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo }}>
             {children}

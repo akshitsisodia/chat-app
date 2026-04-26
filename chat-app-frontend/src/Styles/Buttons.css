@@ -1,0 +1,138 @@
+/* user card related */
+/* user card related */
+.user-image-button {
+  width: fit-content;
+  height: fit-content;
+  border: none;
+  display: flex;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+
+  & img {
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+}
+.user-image-button:hover {
+  border: 2px solid var(--primary-color);
+}
+
+.user-content-button {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  width: 100%;
+  border: none;
+  background-color: transparent;
+  overflow: hidden;
+  color: inherit;
+  cursor: pointer;
+  height: 4rem;
+
+  & h3,
+  h4 {
+    overflow: hidden;
+    text-transform: capitalize;
+    color: inherit;
+    font-weight: 500;
+  }
+  & p {
+    color: #aaa;
+  }
+}
+/* .user-content-button:hover {
+  background-color: #00000014;
+} */
+
+/* logout button  */
+/* logout button  */
+/* logout button  */
+.logout-button {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background-color: #fff;
+  color: #333;
+  margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1rem;
+  cursor: pointer;
+
+  & svg {
+    font-size: 2rem;
+    min-width: 2.4rem;
+    height: 2.4rem;
+    padding: 0.6rem;
+    background-color: #eee;
+    border-radius: 10px;
+  }
+
+  & img {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+  }
+}
+
+.logout-button:hover {
+  & svg {
+    color: var(--danger-color);
+  }
+}
+
+.logout-content {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  width: 100%;
+  gap: 0.3rem;
+
+  & h3 {
+    font-weight: 500;
+  }
+  & span {
+    text-transform: capitalize;
+    background-color: #000;
+    color: #fff;
+    border-radius: 25px;
+    padding: 0.2rem 0.8rem;
+  }
+}
+
+@media screen and (max-width: 1280px) {
+  .logout-button {
+    padding: 0.4rem;
+    & img {
+      display: none;
+    }
+    & svg {
+      background-color: transparent;
+    }
+  }
+  .logout-content {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .logout-button {
+    padding: 1rem;
+    & img {
+      display: block;
+    }
+    & svg {
+      background-color: #eee;
+    }
+  }
+  .logout-content {
+    display: flex;
+  }
+}

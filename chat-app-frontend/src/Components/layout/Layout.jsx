@@ -2,11 +2,12 @@ import Sidebar from './Sidebar'
 import Header from './Header'
 import "../../Styles/Layout.css"
 import DarkBackground from './DarkBackground'
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 function Layout({ children }) {
     const queryClient = useQueryClient();
+    const [showSidebar, setShowSidebar] = useState(false);
 
     useEffect(() => {
         queryClient.setQueryData(["unread"], {});
@@ -20,10 +21,10 @@ function Layout({ children }) {
 
     return (
         <div className="layout">
-            <DarkBackground />
-            <Sidebar />
-            <Header />
+            <DarkBackground show={showSidebar} setShow={() => setShowSidebar(false)} />
+            <Sidebar show={showSidebar} setShow={() => setShowSidebar(false)} />
             <div className="layout-content">
+                <Header show={showSidebar} setShow={() => setShowSidebar(true)} />
                 {children}
             </div>
         </div>

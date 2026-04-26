@@ -155,20 +155,20 @@
 }
 
 .message-sender-image {
-  width: 20px;
-  height: 20px;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 0.5rem;
   margin-left: 0.5rem;
 }
 .message-receiver-image {
-  width: 20px;
-  height: 20px;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 0.5rem;
-  margin-left: 0.5rem;
+  /* margin-left: 0.5rem; */
 }
 
 /* Error  */

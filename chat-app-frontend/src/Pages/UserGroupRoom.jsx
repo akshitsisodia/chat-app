@@ -10,11 +10,13 @@ function UserGroupRoom() {
 
     return (
         <Layout>
-            <div className="privateMessage-prevChats-page">
-                <Groups activeId={id} />
-            </div>
-            <div className="privateMessage-chat-page">
-                <GroupRoom activeId={id} />
+            <div className="private-messages">
+                <div className="privateMessage-prevChats-page">
+                    <Groups activeId={id} />
+                </div>
+                <div className="privateMessage-chat-page">
+                    <GroupRoom activeId={id} />
+                </div>
             </div>
         </Layout>
     )

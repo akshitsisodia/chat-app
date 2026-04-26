@@ -87,9 +87,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  background-color: #eee;
+  color: #444;
 }
 .stream-button:hover {
   background-color: #00000014;
+  color: var(--primary-color);
 }
 .videocall-interface-main {
   position: fixed;

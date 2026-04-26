@@ -68,14 +68,16 @@ function ChatCard({ data }) {
                 <img src={data.chat_photo} alt={data.chat_name} className="chat-photo" />
             </button>
             <button className="chatCard-content" onClick={cardClickedHandler}>
-                <h4 className='chatCard-content-top'>{data.chat_name}</h4>
+                <h3 className='chatCard-content-top'>{data.chat_name}</h3>
                 {content && <p className="chatCard-content-main">{content}</p>}
             </button>
             <div className="chatCard-detail">
                 {formatted && <p className="chatCard-detail-time">{formatted}</p>}
                 {data.unread_count > 0 && <p className="chatCard-detail-unreads">{data.unread_count}</p>}
+                <p>&nbsp;</p>
                 {/* {data.unread_count > 0 && <p className="chatCard-detail-seen"><FaCheck color="#ccc" /></p>} */}
                 {/* {!data.unread_count && <p className="chatCard-detail-seen"><FaCheckDouble color="#00d0ff" /></p>} */}
+                {/* {!data.unread_count && <p className="chatCard-detail-seen"><FaCheckDouble color="var(--primary-color)" /></p>} */}
             </div>
 
         </div>

@@ -104,7 +104,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
     };
     return (
         <>
-            {!isRecording && <button className="sendMessageForm-audio-button" onClick={() => { startRecording(); setChooseFile(false); }}><FaMicrophone color="#333" /></button>}
+            {!isRecording && <button className="sendMessageForm-audio-button" onClick={() => { startRecording(); setChooseFile(false); }}><FaMicrophone /></button>}
             {isRecording &&
                 <div className="sendMessageForm-recording-inputs">
                     <div>Recording: {seconds}s</div>

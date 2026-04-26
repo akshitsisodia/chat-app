@@ -7,9 +7,11 @@ import SendMessageForm from "../form/SendMessageForm";
 import { useEffect, useRef, useState } from "react";
 import { getPrivateMessage } from "../../Services/MessageAPI";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { FaPhone, FaPhoneAlt, FaVideo } from "react-icons/fa";
+import { FaEllipsisH, FaEllipsisV, FaPhone, FaPhoneAlt, FaVideo } from "react-icons/fa";
 import { useCall } from "../../Context/CallContext";
 import { useSocket } from "../../Context/SocketContext";
+import UserImageButton from "../buttons/UserImageButton";
+import UserContentButton from "../buttons/UserContentButton";
 
 function Chat({ id }) {
     const { callUser } = useCall()
@@ -128,22 +130,24 @@ function Chat({ id }) {
 
     return (
         <div className="chat">
-            {/* head  */}
             <div className="chat-top">
                 <ButtonGoBack />
-                <UserCard receiver={receivers[0]} chatId={id} />
-                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo color="var(--primary-color)" /></button>
-                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt color="var(--primary-color)" /></button>
+                <UserImageButton receiver={receivers[0]} />
+                <UserContentButton receiver={receivers[0]} chatId={id} />
+                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo /></button>
+                <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt /></button>
+                {/* <button className="stream-button" ><FaEllipsisH color="#444" /></button> */}
             </div>
 
-            {/* main  */}
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>
                 <Messages receiver={receivers[0]} id={id} content={content} messages={messages} />
                 {isFetchingNextPage || !scroll && <div className="loader"></div>}
             </div>
 
-            {/* input  */}
-            <SendMessageForm receiver={receivers[0]} id={id} content={content} setContent={setContent} />
+            <div className="chat-bottom">
+                <SendMessageForm receiver={receivers[0]} id={id} content={content} setContent={setContent} />
+            </div>
+
         </div>
     )
 }

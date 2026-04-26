@@ -1,5 +1,7 @@
 import "../../Styles/Cards.css"
 import { useNavigate } from 'react-router-dom'
+import UserImageButton from "../buttons/UserImageButton";
+import UserContentButton from "../buttons/UserContentButton";
 
 function UserCard({ receiver, chatId, children }) {
     const navigate = useNavigate();
@@ -13,13 +15,12 @@ function UserCard({ receiver, chatId, children }) {
     }
     return (
         <div className="chatCard">
-            <button className="chatCard-image" onClick={imageClickedHandler}>
-                <img src={receiver?.photo} alt={receiver?.name} className="chat-photo" />
-            </button>
-            <button className="chatCard-content" onClick={cardClickedHandler}>
+            <UserImageButton receiver={receiver} />
+            {/* <button className="chatCard-content" onClick={cardClickedHandler}>
                 <h4 className='chatCard-content-top'>{receiver?.name}</h4>
                 <p className="chatCard-content-main">{receiver?.email}</p>
-            </button>
+            </button> */}
+            <UserContentButton receiver={receiver} chatId={chatId} />
             <div className="userCard-end">
                 {children}
             </div>

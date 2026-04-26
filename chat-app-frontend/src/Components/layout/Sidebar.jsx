@@ -2,19 +2,24 @@
 import { NavLink } from 'react-router-dom'
 
 import "../../Styles/Sidebar.css"
-import { FaMessage, FaPlus, FaRightFromBracket, FaUserGroup, FaUserPlus } from 'react-icons/fa6'
+import { FaMessage, FaPlus, FaRightFromBracket, FaUserGroup, FaUserPlus, FaXmark } from 'react-icons/fa6'
 import { FaSearch } from 'react-icons/fa'
 import { useAuth } from '../../Context/AuthContext'
+import LogoutButton from '../buttons/LogoutButton'
 
-function Sidebar() {
-    const { me, logout } = useAuth();
-    const logoutClickedHandler = () => {
-        logout();
-    }
+function Sidebar({ show, setShow }) {
+    // const { me, logout } = useAuth();
+    // const logoutClickedHandler = () => {
+    //     logout();
+    // }
     return (
-        <aside className="sidebar" id='sidebar'>
+        <aside className={`sidebar ${show ? "show" : ""}`} id='sidebar'>
             <div className="sidebar-top">
-                <h4 className="sidebar-heading"><span className='sidebar-heading-logo'></span><span className="aside-name">ChatApp</span></h4>
+                <FaXmark onClick={setShow} className='sidebar-x-mark' />
+                <h2 className="sidebar-heading">
+                    <span className='sidebar-heading-logo' />
+                    <span className="aside-name">ChatApp</span>
+                </h2>
 
                 <nav className="sidebar-nav">
                     <ul className="nav-links">
@@ -28,12 +33,7 @@ function Sidebar() {
             <div className="sidebar-bottom">
                 <p>©2026 ChatApp, All rights reserved.</p>
                 <p>Terms of use</p>
-                <button type='button' className='logout-button' onClick={logoutClickedHandler}>
-                    <div className="logout-button-container">
-                        <img src={me?.photo} alt={me.name} width={30} height={30} /><span className="aside-name">{me?.name}</span>
-                    </div>
-                    <FaRightFromBracket />
-                </button>
+                <LogoutButton />
             </div>
         </aside>
     )

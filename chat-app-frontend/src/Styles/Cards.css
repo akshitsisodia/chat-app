@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 0 1rem;
+  padding: 1rem;
   border-radius: 10px;
   color: inherit;
 }
@@ -20,8 +20,8 @@
   background-color: transparent;
 }
 .chat-photo {
-  width: 45px;
-  height: 45px;
+  width: 3.5rem;
+  height: 3.5rem;
   object-fit: cover;
   border-radius: 50%;
 }
@@ -31,8 +31,10 @@
   flex-direction: column;
   justify-content: center;
   align-items: start;
+  gap: 0.3rem;
   width: 100%;
-  height: 70px;
+  /* min-width: 220px; */
+  /* height: 70px; */
   box-sizing: border-box;
   padding: 0 0.5rem;
   margin: 0 0.3rem;
@@ -42,12 +44,13 @@
   color: inherit;
 
   & .chatCard-content-top {
+    font-weight: 400;
     overflow: hidden;
     text-transform: capitalize;
     color: inherit;
   }
   & .chatCard-content-main {
-    font-size: 0.8rem;
+    font-size: 1rem;
     color: #aaa;
   }
 }
@@ -59,13 +62,14 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 35px;
+  /* height: 40px; */
+  gap: .3rem;
   min-width: 50px;
   align-items: end;
 
   & .chatCard-detail-time {
     color: #999;
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 
   & .chatCard-detail-unreads {
@@ -121,7 +125,7 @@
   border-bottom-right-radius: 0px;
   padding: 0.12rem;
   /* padding-bottom: 1rem; */
-  margin-right: 1rem;
+  /* margin-right: 1rem; */
   word-wrap: break-word;
   white-space: pre-wrap;
   word-break: break-word;

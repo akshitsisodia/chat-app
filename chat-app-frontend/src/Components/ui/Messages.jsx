@@ -39,8 +39,8 @@ function Messages({ id, receiver, content, messages }) {
                                 ?
                                 <>
                                     {/* <OutgoingCard /> */}
-                                    < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
                                     {/* {curr.sender_id === me.id && <img className="message-sender-image" src={me.photo} alt="" />} */}
+                                    < SendMessageCard receiver={receiver} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
                                 </>
 
                                 :
