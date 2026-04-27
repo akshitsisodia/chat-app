@@ -288,3 +288,68 @@
     width: 120px;
   }
 }
+
+/* Invite Members Modal Styles */
+.invite-members-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  border-radius: 10px;
+  color: #fff;
+}
+
+.invite-members-modal h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.invite-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.invite-cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.invite-cancel-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.invite-confirm-btn {
+  padding: 0.75rem 1.5rem;
+  background-color: #22c55e;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.invite-confirm-btn:hover:not(:disabled) {
+  background-color: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.invite-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

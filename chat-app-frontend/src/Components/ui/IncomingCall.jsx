@@ -3,7 +3,7 @@ import { FaPhone, FaPhoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa'
 import { useCall } from '../../Context/CallContext'
 
 function IncomingCall({ caller, isVideo = false }) {
-    const { acceptCall, rejectCall } = useCall()
+    const { state, acceptCall, acceptInvite, rejectCall } = useCall()
     return (
         <div className="incoming-call">
             <div className="incomong-call-user">
@@ -26,7 +26,7 @@ function IncomingCall({ caller, isVideo = false }) {
                 </button>
                 <button
                     type="button"
-                    onClick={acceptCall}
+                    onClick={state?.offer ? acceptCall : acceptInvite}
                     className="accept-call incoming-button">
                     {isVideo ?
                         <FaVideo />

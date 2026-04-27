@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { FaMicrophoneSlash, FaPhoneSlash, FaVideo, FaMicrophone, FaVideoSlash } from 'react-icons/fa'
-import { FaGear, FaMaximize, FaMinimize, FaVolumeHigh } from 'react-icons/fa6'
+import { FaGear, FaMaximize, FaMinimize, FaVolumeHigh, FaUserPlus } from 'react-icons/fa6'
 import { useCall } from '../../Context/CallContext'
+import InviteMembersModal from './InviteMembersModal'
 
 function CallingScreen({ isCalling = true, isVideoCall }) {
     const [isMaximize, setIsMaximize] = useState(false)
-    const { state, isMuted, toggleMute, isVideo, toggleVideo, myVideo, remoteStreams, endCall } = useCall()
+    const { state, isMuted, toggleMute, isVideo, toggleVideo, myVideo, remoteStreams, endCall, inviteUsersToCall, showInviteModal, setShowInviteModal, participants } = useCall()
 
     const [second, setSecond] = useState(0);
     const [minute, setMinute] = useState(0);
@@ -103,6 +104,14 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                     ))}
                 </div>
             </div>
+
+            {showInviteModal && (
+                <InviteMembersModal
+                    onClose={() => setShowInviteModal(false)}
+                    onInvite={inviteUsersToCall}
+                    currentParticipants={participants}
+                />
+            )}
 
         </>
     )

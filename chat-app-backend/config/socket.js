@@ -151,16 +151,62 @@ const initSocket = (server) => {
       const call = activeCalls[callId];
       if (!call || !call.participants.includes(socket.user.id)) return;
 
-      // add user if not already
-      if (!call.participants.includes(to)) {
-        call.participants.push(to);
+      io.to(to).emit("invite-notification", {
+        from: socket.user.id,
+        callId,
+        callType: call.callType,
+        invitedBy: { name: socket.user.name, photo: socket.user.photo },
+      });
+    });
+
+    socket.on("accept-invite", ({ callId }) => {
+      const call = activeCalls[callId];
+      if (!call) return;
+
+      const userId = socket.user.id;
+
+      if (!call.participants.includes(userId)) {
+        call.participants.push(userId);
       }
 
-      io.to(to).emit("incoming-call", {
-        user: socket.user,
+      // notify existing participants
+      call.participants.forEach((id) => {
+        if (id !== userId) {
+          io.to(id).emit("participant-joined", {
+            userId,
+            callId,
+          });
+        }
+      });
+
+      // send existing participants to new user
+      const others = call.participants.filter((id) => id !== userId);
+
+      socket.emit("join-call-success", {
+        participants: others,
+        callType: call.callType,
+      });
+    });
+
+    socket.on("new-participant-offer", ({ to, offer, callId }) => {
+      const call = activeCalls[callId];
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
+      io.to(to).emit("new-participant-offer", {
+        from: socket.user.id,
+        offer,
         callId,
-        type: call.callType,
-        isInvite: true,
+      });
+    });
+
+    socket.on("new-participant-answer", ({ to, answer, callId }) => {
+      const call = activeCalls[callId];
+      if (!call || !call.participants.includes(socket.user.id)) return;
+
+      io.to(to).emit("new-participant-answer", {
+        from: socket.user.id,
+        answer,
+        callId,
       });
     });
 
