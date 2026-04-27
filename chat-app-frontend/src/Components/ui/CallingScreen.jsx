@@ -1,109 +1,152 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { FaMicrophoneSlash, FaPhoneSlash, FaVideo, FaMicrophone, FaVideoSlash } from 'react-icons/fa'
-import { FaGear, FaMaximize, FaMinimize, FaVolumeHigh, FaUserPlus } from 'react-icons/fa6'
+import { FaUserPlus } from 'react-icons/fa6'
 import { useCall } from '../../Context/CallContext'
 import InviteMembersModal from './InviteMembersModal'
+import { CALL_STATE } from '../../config/callState'
+import VideoPlayer from './VideoPlayer .jsx'
 
 function CallingScreen({ isCalling = true, isVideoCall }) {
-    const [isMaximize, setIsMaximize] = useState(false)
-    const { state, isMuted, toggleMute, isVideo, toggleVideo, myVideo, remoteStreams, endCall, inviteUsersToCall, showInviteModal, setShowInviteModal, participants } = useCall()
+    const [elapsedSeconds, setElapsedSeconds] = useState(0)
+    const {
+        state,
+        isMuted,
+        toggleMute,
+        toggleVideo,
+        localStream,
+        remoteStreams,
+        endCall,
+        inviteUsersToCall,
+        showInviteModal,
+        setShowInviteModal,
+        participants
+    } = useCall()
 
-    const [second, setSecond] = useState(0);
-    const [minute, setMinute] = useState(0);
-    const [hour, sethour] = useState(0);
+    const remoteParticipantIds = useMemo(() => {
+        const participantIds = (participants || [])
+            .map(participant => typeof participant === 'object' ? participant?.id : participant)
+            .filter(Boolean)
+        const streamIds = Object.keys(remoteStreams || {})
+        return [...new Set([...participantIds, ...streamIds])]
+    }, [participants, remoteStreams])
 
+    const tiles = useMemo(() => {
+        const remoteTiles = remoteParticipantIds.map((id) => ({
+            id,
+            label: `User ${id?.slice ? id.slice(0, 8) : id}`,
+            stream: remoteStreams?.[id],
+            isLocal: false
+        }))
+
+        return [
+            {
+                id: 'local',
+                label: 'You',
+                stream: localStream,
+                isLocal: true
+            },
+            ...remoteTiles
+        ]
+    }, [localStream, remoteParticipantIds, remoteStreams])
+
+    const connected = state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.RECONNECTED
+    const localVideoEnabled = localStream?.getVideoTracks().some(track => track.readyState === 'live' && track.enabled)
+    const statusText = connected ? 'Connected' : isCalling ? 'Calling...' : 'Connecting...'
 
     useEffect(() => {
-        let interval = null;
-        if (state.status === "connected") {
-            interval = setInterval(() => {
-                setSecond(prevSecond => {
-                    if (prevSecond === 59) {
-                        setMinute(prevMinute => {
-                            if (prevMinute === 59) {
-                                sethour(prevHour => prevHour + 1);
-                                return 0;
-                            }
-                            return prevMinute + 1;
-                        });
-                        return 0;
-                    }
-                    return prevSecond + 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [state.status]);
+        if (!connected) return undefined
 
+        const interval = setInterval(() => {
+            setElapsedSeconds(prev => prev + 1)
+        }, 1000)
 
+        return () => clearInterval(interval)
+    }, [connected])
+
+    const formatTime = () => {
+        const hours = Math.floor(elapsedSeconds / 3600)
+        const minutes = Math.floor((elapsedSeconds % 3600) / 60)
+        const seconds = elapsedSeconds % 60
+        const parts = hours > 0 ? [hours, minutes, seconds] : [minutes, seconds]
+
+        return parts.map(part => part.toString().padStart(2, '0')).join(':')
+    }
+
+    const shouldShowVideo = (tile) => {
+        if (!isVideoCall || !tile.stream) return false
+        if (!tile.isLocal) return true
+
+        return localVideoEnabled
+    }
 
     return (
-        <>
-            <span className="calling-screen-state">{state.status === 'connected' ? (hour === 0 ? "" : (hour.toString().length === 1 ? "0" + hour : hour + ":")) + (minute.toString().length === 2 ? minute : "0" + minute) + ":" + (second.toString().length === 2 ? second : "0" + second) : state.status}</span>
-            <div className="videocall-interface-main">
-                {/* <button className="videocall-volume-button"><FaVolumeHigh /></button> */}
+        <div className="calling-screen group-call-screen">
+            <header className="group-call-header">
+                <div>
+                    <span className="group-call-status">{statusText}</span>
+                    <span className="group-call-time">{formatTime()}</span>
+                </div>
+                <div className="group-call-count">{tiles.length} participant{tiles.length === 1 ? '' : 's'}</div>
+            </header>
 
-                <div className="videocall-interface-buttons">
-                    {/* {isVideoCall && <button
-                    
-                        type="button"
-                        className="videocall-other-button"
-                        onClick={() => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
-                    >
-                        {isMaximize ? <FaMaximize /> : <FaMinimize />}
-                    </button>} */}
+            <main className={`group-call-grid group-call-grid-${Math.min(tiles.length, 6)}`}>
+                {tiles.map((tile) => (
+                    <section className={`group-call-tile ${tile.isLocal ? 'local' : ''}`} key={tile.id}>
+                        {shouldShowVideo(tile) ? (
+                            <VideoPlayer stream={tile.stream} muted={tile.isLocal} />
+                        ) : (
+                            <div className="group-call-placeholder" aria-label={`${tile.label} audio only`}>
+                                <div className="group-call-avatar">{tile.label.charAt(0).toUpperCase()}</div>
+                            </div>
+                        )}
+                        <div className="group-call-tile-label">
+                            <span>{tile.label}</span>
+                            {tile.isLocal && isMuted && <span className="group-call-muted">Muted</span>}
+                            {!tile.isLocal && !tile.stream && <span className="group-call-muted">Joining</span>}
+                        </div>
+                    </section>
+                ))}
+            </main>
+
+            <footer className="group-call-controls">
+                <button
+                    className={`group-call-button ${isMuted ? 'active' : ''}`}
+                    onClick={toggleMute}
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                    type="button"
+                >
+                    {isMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                </button>
+
+                <button
+                    className="group-call-button"
+                    onClick={() => setShowInviteModal(true)}
+                    title="Invite members"
+                    type="button"
+                >
+                    <FaUserPlus />
+                </button>
+
+                <button
+                    className="group-call-button end"
+                    onClick={() => endCall('END')}
+                    title="End call"
+                    type="button"
+                >
+                    <FaPhoneSlash />
+                </button>
+
+                {isVideoCall && (
                     <button
-                        className="videocall-other-button"
-                        onClick={toggleMute}
-                        title={isMuted ? "Unmute" : "Mute"}
-                    >
-                        {isMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
-                    </button>
-                    <button className="videocall-end-button" onClick={() => endCall("END")}><FaPhoneSlash /></button>
-                    {isVideoCall && <button
-                        className="videocall-other-button"
+                        className={`group-call-button ${!localVideoEnabled ? 'active' : ''}`}
                         onClick={toggleVideo}
-                        title={isVideo ? "Video" : "Audio"}>
-                        {isVideo ? <FaVideoSlash /> : <FaVideo />}
-                    </button>}
-                    {/* <button className="videocall-other-button" onClick={endCall}><FaGear /></button> */}
-                </div>
-            </div>
-
-
-
-            <button
-                type="button"
-                onClick={isMaximize ? () => { } : () => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
-                className={isMaximize ? "videocall-max" : isVideoCall ? "videocall-min" : "videocall-hidden"}
-
-                disabled={!isVideoCall}
-            >
-                <video ref={myVideo} autoPlay muted />
-            </button >
-            {/* <button
-                type="button"
-                onClick={!isMaximize ? () => { } : () => isMaximize ? setIsMaximize(false) : setIsMaximize(true)}
-                className={(!isMaximize ? "videocall-max" : "videocall-min")}
-            >
-                <video ref={remoteVideo} autoPlay />
-            </button> */}
-            <div className="videocall-grid">
-                <div className={(!isMaximize ? "videocall-max" : "videocall-min")}>
-                    {Object.entries(remoteStreams || {}).map(([id, stream]) => (
-                        <video
-                            key={id}
-                            autoPlay
-                            playsInline
-                            ref={(el) => {
-                                if (el && el.srcObject !== stream) {
-                                    el.srcObject = stream;
-                                }
-                            }}
-                        />
-                    ))}
-                </div>
-            </div>
+                        title={localVideoEnabled ? 'Stop video' : 'Start video'}
+                        type="button"
+                    >
+                        {localVideoEnabled ? <FaVideo /> : <FaVideoSlash />}
+                    </button>
+                )}
+            </footer>
 
             {showInviteModal && (
                 <InviteMembersModal
@@ -112,8 +155,7 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                     currentParticipants={participants}
                 />
             )}
-
-        </>
+        </div>
     )
 }
 

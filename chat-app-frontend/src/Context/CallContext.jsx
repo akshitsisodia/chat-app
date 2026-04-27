@@ -16,7 +16,8 @@ const initialState = {
     peer: null,
     offer: null,
     callType: "audio",
-    notify: true
+    notify: true,
+    isInvite: false
 };
 
 function callReducer(state, action) {
@@ -25,7 +26,7 @@ function callReducer(state, action) {
             return { ...state, status: CALL_STATE.OUTGOING, peer: action?.peer, callType: action.callType };
 
         case "INCOMING":
-            return { ...state, status: CALL_STATE.RINGING, peer: action?.peer, offer: action.offer, callType: action.callType };
+            return { ...state, status: CALL_STATE.RINGING, peer: action?.peer, offer: action.offer, callType: action.callType, isInvite: action.isInvite || false };
 
         case "CONNECTING":
             return { ...state, status: CALL_STATE.CONNECTING };
@@ -189,7 +190,8 @@ export const CallProvider = ({ children }) => {
         });
     }
 
-    const acceptInvite = (callId) => {
+    const acceptInvite = () => {
+        console.log("works")
         socket.emit("accept-invite", { callId });
     };
 
@@ -528,13 +530,13 @@ export const CallProvider = ({ children }) => {
     }
 
     // ---- Invite Members Logic ----
-    const inviteUsersToCall = async (userIds) => {
+    const inviteUsersToCall = async (users) => {
         if (!callId || state.status !== CALL_STATE.CONNECTED) {
             console.warn("Cannot invite: Call not in progress");
             return;
         }
 
-        const newInvitees = userIds.filter(id => !participants.includes(id) && id !== me?.id);
+        const newInvitees = users.filter(id => !participants.includes(id) && id !== me?.id);
 
         if (newInvitees.length === 0) {
             console.warn("All selected users are already in the call");
@@ -545,9 +547,10 @@ export const CallProvider = ({ children }) => {
         setInvitedUsers(prev => [...new Set([...prev, ...newInvitees])]);
 
         // Emit invite event to each user
-        newInvitees.forEach(userId => {
+        newInvitees.forEach(user => {
+            console.log(users)
             socket?.emit("invite-to-call", {
-                to: userId,
+                to: user.id,
                 callId,
             });
         });
@@ -560,11 +563,13 @@ export const CallProvider = ({ children }) => {
 
         // You could show a modal or notification here
         // For now, we'll dispatch to show incoming call UI
+        setCallId(incomingCallId);
         dispatch({
             type: "INCOMING",
             peer: { id: from, name: invitedBy.name, photo: invitedBy.photo },
             offer: null, // Offer will come later
-            callType
+            callType,
+            isInvite: true
         });
     };
 
@@ -572,6 +577,7 @@ export const CallProvider = ({ children }) => {
         if (incomingCallId !== callId) return;
 
         console.log("New participant joined:", userId);
+        setParticipants(prev => [...new Set([...prev, userId])]);
 
         // avoid duplicate
         if (peers.current.has(userId)) return;
@@ -579,6 +585,7 @@ export const CallProvider = ({ children }) => {
         // 1. create peer
         const pc = createPeerConnection({
             onTrack: (event) => {
+                console.log("TRACK Sender", event.streams);
                 setRemoteStreams(prev => ({
                     ...prev,
                     [userId]: event.streams[0]
@@ -615,6 +622,7 @@ export const CallProvider = ({ children }) => {
         console.log("Joined call, participants:", participants);
 
         setParticipants(prev => [...new Set([...prev, ...participants])]);
+        dispatch({ type: "CONNECTING" }); // ✅ IMPORTANT
 
         const stream = await getMedia(callType === "video");
         if (myVideo.current) myVideo.current.srcObject = stream;
@@ -628,6 +636,7 @@ export const CallProvider = ({ children }) => {
 
         const pc = createPeerConnection({
             onTrack: (event) => {
+                console.log("TRACK RECEIVED", event.streams);
                 setRemoteStreams(prev => ({
                     ...prev,
                     [from]: event.streams[0]
@@ -720,7 +729,7 @@ export const CallProvider = ({ children }) => {
 
         };
 
-    }, [socket, state.status, callId, me]);
+    }, [socket, state.status]);
 
     useEffect(() => {
         let timer;
@@ -794,7 +803,12 @@ export const CallProvider = ({ children }) => {
             {children}
 
             {/* GLOBAL UI */}
-            {state.status === CALL_STATE.RINGING && <IncomingCall caller={state?.peer} isVideo={state?.callType === "video" ? true : false} acceptCall={acceptCall} rejectCall={rejectCall} />}
+            {state.status === CALL_STATE.RINGING &&
+                <IncomingCall caller={state?.peer}
+                    isVideo={state?.callType === "video" ? true : false}
+                    acceptCall={state.isInvite ? acceptInvite : acceptCall} // ✅ FIX
+                    rejectCall={rejectCall} />
+            }
             {/* {state.status === CALL_STATE.CONNECTED && <VideoCallUI />} */}
 
             {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.RECONNECTED || state.status === CALL_STATE.RECONNECTING)

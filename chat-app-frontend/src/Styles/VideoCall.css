@@ -1,42 +1,86 @@
-.calling-screen-state {
+/* ====== RESPONSIVE VIDEO CALL UI ====== */
+
+.calling-screen {
   position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #0000003a;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+/* ====== HEADER ====== */
+.call-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.call-timer {
   color: #fff;
-  font-size: small;
-  z-index: 1000;
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  min-width: 100px;
+}
+
+.participant-count {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  background: rgba(34, 197, 94, 0.2);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.4);
 }
 
 .videocall-hidden {
   display: none;
 }
 .videocall-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 10px;
+
 }
 .videocall-min {
-  position: fixed;
+  position: absolute;
   left: 1rem;
   top: 1rem;
-  width: 200px;
   height: 150px;
+  width: 200px;
   border-radius: 10px;
   z-index: 1000;
-  overflow: hidden;
+  /* overflow: hidden; */
   cursor: pointer;
-  /* background-color: #fff; */
   background: linear-gradient(135deg, #0f172a, #1e293b);
   border: none;
-  box-shadow: 0 0 5px #0002;
+  object-fit: contain;
+
   & video {
     width: 100%;
-    height: 100%;
-    object-fit: contain;
+    height: 150px;
+    box-shadow: 0 0 5px #0002;
+    border-radius: 10px;
   }
 }
 .videocall-min::after {
@@ -60,22 +104,20 @@
 }
 
 .videocall-max {
-  position: fixed;
-  right: 0rem;
-  left: 0;
-  top: 0rem;
-  bottom: 0;
-  width: 500px;
-  /* border-radius: 10px; */
+  border-radius: 10px;
   width: 100%;
   height: 100%;
   z-index: 100;
-  /* background-color: rgb(255, 255, 255); */
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  /* background-color: red; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  object-fit: cover;
+  background: transparent;
+
   & video {
     width: 100%;
     height: 100%;
-    object-fit: contain;
   }
 }
 .stream-button {
@@ -352,4 +394,334 @@
 .invite-confirm-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ====== GROUP CALL SCREEN ====== */
+.group-call-screen {
+  --call-gap: clamp(0.5rem, 1.5vw, 1rem);
+  --call-header-height: 76px;
+  --call-controls-height: 96px;
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.18), transparent 32rem),
+    linear-gradient(135deg, #07111f, #111827 52%, #151515);
+}
+
+.group-call-header {
+  position: relative;
+  z-index: 20;
+  min-height: var(--call-header-height);
+  padding: 0.9rem clamp(1rem, 3vw, 2rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  color: #fff;
+  background: rgba(5, 10, 18, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.group-call-header > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.group-call-status,
+.group-call-time,
+.group-call-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.group-call-status {
+  background: rgba(34, 197, 94, 0.9);
+}
+
+.group-call-time,
+.group-call-count {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+
+.group-call-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: var(--call-gap);
+  padding: var(--call-gap);
+  padding-bottom: calc(var(--call-controls-height) + var(--call-gap));
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.group-call-grid-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.group-call-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.group-call-grid-3,
+.group-call-grid-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.group-call-grid-5,
+.group-call-grid-6 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.group-call-grid-3 .group-call-tile:first-child {
+  grid-row: span 2;
+}
+
+.group-call-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 170px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #0b1220;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+}
+
+.group-call-tile.local {
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.group-call-tile video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #05070c;
+}
+
+.group-call-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background:
+    radial-gradient(circle at center, rgba(34, 197, 94, 0.18), transparent 16rem),
+    linear-gradient(135deg, #172033, #0b1220);
+}
+
+.group-call-avatar {
+  width: clamp(68px, 12vw, 112px);
+  height: clamp(68px, 12vw, 112px);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+}
+
+.group-call-tile-label {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.group-call-tile-label span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+}
+
+.group-call-muted {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  background: rgba(239, 68, 68, 0.9);
+  font-size: 0.72rem;
+}
+
+.group-call-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 30;
+  transform: translateX(-50%);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.55rem, 2vw, 1rem);
+  padding: 0.7rem;
+  border-radius: 999px;
+  background: rgba(5, 10, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.3);
+}
+
+.group-call-button {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 50%;
+  border: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.group-call-button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.group-call-button.active {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.group-call-button.end {
+  width: 64px;
+  height: 64px;
+  flex-basis: 64px;
+  background: #dc2626;
+  font-size: 1.35rem;
+}
+
+.group-call-button.end:hover {
+  background: #ef4444;
+}
+
+@media (min-width: 1180px) {
+  .group-call-grid-1 .group-call-tile {
+    max-width: 1180px;
+    width: 100%;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .group-call-grid-5,
+  .group-call-grid-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .group-call-grid-3 .group-call-tile:first-child {
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .group-call-screen {
+    --call-header-height: 68px;
+    --call-controls-height: 86px;
+  }
+
+  .group-call-header {
+    padding: 0.65rem 0.75rem;
+    align-items: flex-start;
+  }
+
+  .group-call-header > div:first-child {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .group-call-status,
+  .group-call-time,
+  .group-call-count {
+    min-height: 28px;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.75rem;
+  }
+
+  .group-call-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+    grid-auto-rows: minmax(180px, 34vh);
+  }
+
+  .group-call-tile {
+    min-height: 180px;
+    border-radius: 10px;
+  }
+
+  .group-call-tile-label {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    font-size: 0.78rem;
+  }
+
+  .group-call-controls {
+    width: calc(100% - 1rem);
+    bottom: 0.5rem;
+    min-height: 64px;
+    padding: 0.5rem;
+  }
+
+  .group-call-button {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    font-size: 1rem;
+  }
+
+  .group-call-button.end {
+    width: 54px;
+    height: 54px;
+    flex-basis: 54px;
+  }
+}
+
+@media (max-width: 380px) {
+  .group-call-controls {
+    justify-content: space-between;
+    gap: 0.35rem;
+  }
+
+  .group-call-button {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .group-call-button.end {
+    width: 50px;
+    height: 50px;
+    flex-basis: 50px;
+  }
 }
