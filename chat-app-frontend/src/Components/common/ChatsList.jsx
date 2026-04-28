@@ -9,7 +9,7 @@ function ChatsList({ data, isLoading, activeId }) {
         <>
             {data?.length > 0 && data?.map(curr => {
                 return (
-                    <div key={curr.chat_id} className={activeId && activeId === curr.chat_id ? "users-card-active" : ''}  >
+                    <div key={curr.chat_id} className={activeId && String(activeId) === String(curr.chat_id) ? "chat-list-item chat-list-item-active" : 'chat-list-item'}  >
                         {curr.type === "private" && <ChatCard data={curr} />}
                         {curr.type === "group" && <GroupCard data={curr} />}
                     </div>

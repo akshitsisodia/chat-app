@@ -59,6 +59,9 @@ exports.getUserById = asyncErrorHandler(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: sanitizeUser(user),
+    data: {
+      ...sanitizeUser(user),
+      created_at: user.created_at,
+    },
   });
 });

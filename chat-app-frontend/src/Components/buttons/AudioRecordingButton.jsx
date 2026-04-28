@@ -83,7 +83,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
                     formData.append("types", file.type);
                     formData.append("names", file.name);
 
-                    const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), receiver?.public_key);
+                    const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), public_key);
                     formData.append("content", encryptedData.encrypted);
                     formData.append("nonce", encryptedData.nonce);
                 }

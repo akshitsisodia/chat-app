@@ -63,11 +63,11 @@ function ChatCard({ data }) {
     // const time = `${date.getHours()}:${date.getMinutes().toString().length < 2 ? "0" + date.getMinutes().toString() : date.getMinutes().toString()}`
 
     return (
-        <div className="chatCard">
+        <div className="chatCard" onClick={cardClickedHandler}>
             <button className="chatCard-image" onClick={imageClickedHandler}>
                 <img src={data.chat_photo} alt={data.chat_name} className="chat-photo" />
             </button>
-            <button className="chatCard-content" onClick={cardClickedHandler}>
+            <button className="chatCard-content" >
                 <h3 className='chatCard-content-top'>{data.chat_name}</h3>
                 {content && <p className="chatCard-content-main">{content}</p>}
             </button>

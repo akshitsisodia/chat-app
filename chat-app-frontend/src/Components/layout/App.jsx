@@ -2,7 +2,6 @@ import { Route, Routes } from 'react-router-dom'
 import './Styles/App.css'
 import PreviousChats from './Pages/PreviousChats'
 import Users from './Pages/Users'
-import SingleUser from './Pages/SingleUser'
 import PrivateMessages from './Pages/PrivateMessages'
 import ProtectedRoute from './Routes/ProtectedRoute'
 import Auth from './Pages/Auth'
@@ -10,7 +9,6 @@ import UserGroups from './Pages/UserGroups'
 import UserGroupRoom from './Pages/UserGroupRoom'
 import CreateGroup from './Pages/CreateGroup'
 import ChatProfile from './Pages/ChatProfile'
-import UpdatePhoto from './Pages/UpdatePhoto'
 
 
 function App() {
@@ -61,7 +59,7 @@ function App() {
       } />
       <Route path='/users/:id' element={
         <ProtectedRoute>
-          <SingleUser />
+          <Users />
         </ProtectedRoute>
       } />
 

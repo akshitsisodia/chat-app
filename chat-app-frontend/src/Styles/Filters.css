@@ -1,34 +1,43 @@
 .search {
   display: flex;
-  height: fit-content;
+  align-items: center;
+  min-height: 46px;
   width: 100%;
-  max-width: fit-content;
-  border: 1px solid #ccc;
+  max-width: 520px;
+  border: 1px solid #d1d5db;
   margin: 0 auto;
-  border-radius: 10px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
 }
 
 .search-button {
   border: none;
   background-color: transparent;
-  width: 60px;
-  height: 40px;
+  flex: 0 0 48px;
+  height: 46px;
 }
 .search-input {
   box-sizing: border-box;
   border: none;
   width: 100%;
-  min-width: 250px;
-  border-top-right-radius: 25px;
-  border-bottom-right-radius: 25px;
-  padding: 0 0.5rem;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 0.75rem 0 0;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
 }
 
 .search-input:focus {
   outline: none;
 }
 .search:focus-within {
-  border: 2px solid var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--light-background);
 }
 
 /* filters  */
@@ -36,25 +45,31 @@
 /* filters  */
 
 .pagination {
-  /* background-color: red; */
-  width: fit-content;
+  width: 100%;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.5rem;
-  position: absolute;
-  bottom: 0rem;
-  left: 0;
-  right: 0;
-  margin: auto;
-
+  margin: 1.25rem auto 0;
 }
 .pagination-button {
-  border: none;
-  height: 30px;
-  width: 30px;
-  border: 1px solid #ccc;
+  flex: 0 0 32px;
+  height: 32px;
+  border: 1px solid #d1d5db;
   border-radius: 5px;
   cursor: pointer;
 }
-.pagination-button:hover{
+.pagination-button:hover {
   box-shadow: 0 0 2px #0005;
+}
+
+@media screen and (max-width: 420px) {
+  .pagination {
+    gap: 0.35rem;
+  }
+
+  .pagination-button {
+    flex-basis: 30px;
+    height: 30px;
+  }
 }

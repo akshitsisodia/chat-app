@@ -161,93 +161,340 @@
   border-radius: 10px;
 }
 
-/*! Create Group Container (optional) */
+/*! Create Group */
 .form-wrapper {
   min-height: 100vh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff; /* dark background */
+  background: #fff;
 }
 
-/* Form card */
+.create-group-page {
+  min-height: 100%;
+  align-items: flex-start;
+  padding: clamp(1rem, 4vw, 2.5rem);
+  background:
+    linear-gradient(135deg, var(--light-background), transparent 34%),
+    #f8faf9;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
 .group-form {
   width: 100%;
-  max-width: 400px;
-  padding: 1.5rem;
-  border-radius: 12px;
-  background: #fff;
-  margin: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   position: relative;
-  gap: 14px;
-  & h2 {
-    color: var(--primary-color);
-  }
 }
-.members-container {
-  max-height: 40vh;
-  overflow-y: scroll;
+
+.create-group-form {
+  max-width: 680px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+  overflow: hidden;
 }
-.members-container::-webkit-scrollbar {
+
+.create-group-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(1rem, 4vw, 1.5rem);
+  border-bottom: 1px solid #edf0f2;
+}
+
+.create-group-icon {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--primary-color);
+  background: var(--light-background);
+  font-size: 1.25rem;
+}
+
+.create-group-header h2 {
+  color: #1f2937;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.create-group-header p {
+  margin-top: 0.3rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.create-group-body {
+  display: grid;
+  gap: 1.1rem;
+  padding: clamp(1rem, 4vw, 1.5rem);
+}
+
+.group-photo-field {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px dashed #b9c4c3;
+  border-radius: 8px;
+  background: #fbfcfc;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.group-photo-field:hover {
+  border-color: var(--primary-color);
+  background: var(--light-background);
+}
+
+.group-photo-field input {
   display: none;
 }
 
-/* Inputs */
-.group-form input[type="text"],
-.group-form input[type="file"] {
+.group-photo-preview {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  background: #fff;
+  border: 1px solid #dfe4e4;
+  overflow: hidden;
+  font-size: 1.4rem;
+}
+
+.group-photo-preview img {
   width: 100%;
-  padding: 10px 12px;
+  height: 100%;
+  object-fit: cover;
+}
+
+.group-photo-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #1f2937;
+}
+
+.group-photo-text small {
+  color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.create-group-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.create-group-field span,
+.create-group-members-head span {
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.group-form input[type="text"] {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 0.9rem;
   border-radius: 8px;
-  border: 2px solid #ccc;
-  font-size: 14px;
+  border: 1px solid #d1d5db;
+  color: #1f2937;
+  background: #fff;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
 
-/* File input tweak */
-.group-form input[type="file"] {
-  padding: 6px;
-  cursor: pointer;
+.group-form input[type="text"]::placeholder {
+  color: #9ca3af;
 }
 
-/* Buttons */
-.group-form button {
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-/* Add members button */
-.group-form button[type="button"] {
-  background: #eee;
-  color: #999;
-  font-weight: 600;
-  border: 2px solid #ccc;
-}
-
-.group-form button[type="button"]:hover {
-  background: #ccc;
-  color: #777;
-}
-
-/* Submit button */
-.group-form button[type="submit"] {
-  background: var(--primary-color);
-  color: white;
-  font-weight: 500;
-}
-
-.group-form button[type="submit"]:hover {
-  background: var(--button-hover);
-}
-
-/* Focus states */
 .group-form input:focus {
   outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--light-background);
+}
+
+.create-group-members-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.create-group-members-head p {
+  margin-top: 0.2rem;
+  color: #6b7280;
+  font-size: 0.92rem;
+}
+
+.group-form button {
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.add-members-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.8rem;
+  background: #fff;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color) !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.add-members-button:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.members-container {
+  max-height: 38vh;
+  min-height: 124px;
+  overflow-y: auto;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.members-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.members-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.members-container .user-list-select-button {
+  border-radius: 8px;
+}
+
+.members-container .users-list {
+  padding: 0.75rem;
+  box-sizing: border-box;
+}
+
+.members-container-empty {
+  display: grid;
+  place-items: center;
+}
+
+.create-group-empty-members {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  padding: 1.25rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.create-group-empty-members svg {
+  color: var(--primary-color);
+  font-size: 1.6rem;
+}
+
+.create-group-button {
+  min-height: 52px;
+  margin: 0 clamp(1rem, 4vw, 1.5rem) clamp(1rem, 4vw, 1.5rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 700;
+}
+
+.create-group-button:hover {
+  background: var(--button-hover);
+}
+
+.create-group-button:disabled {
+  cursor: not-allowed;
+  background: #cbd5d4;
+}
+
+@media screen and (max-width: 640px) {
+  .create-group-page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .create-group-form {
+    min-height: 100%;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .create-group-header {
+    align-items: flex-start;
+  }
+
+  .create-group-icon {
+    flex-basis: 42px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .group-photo-field {
+    align-items: flex-start;
+  }
+
+  .group-photo-preview {
+    flex-basis: 60px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .create-group-members-head {
+    align-items: flex-start;
+  }
+
+  .members-container {
+    max-height: 34vh;
+  }
+}
+
+@media screen and (max-width: 420px) {
+  .create-group-header p {
+    font-size: 0.92rem;
+  }
+
+  .group-photo-field {
+    padding: 0.8rem;
+  }
+
+  .create-group-members-head {
+    flex-direction: column;
+  }
+
+  .add-members-button {
+    width: 100%;
+  }
+
+  .members-container .user-list-select-button {
+    padding: 0.3rem 0.65rem;
+  }
 }

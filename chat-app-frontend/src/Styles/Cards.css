@@ -91,7 +91,89 @@
 /* user Card  */
 /* user Card  */
 /* user Card  */
+.users-list {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.users-card {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.users-card:hover {
+  border-color: #cfd8d7;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.07);
+  transform: translateY(-1px);
+}
+
+.users-card-image {
+  width: 86px;
+  height: 86px;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  background: var(--light-background);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.users-card-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.users-card-content {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.users-card-content h4 {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.users-card-content p {
+  width: 100%;
+  color: #6b7280;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .userCard-end {
+  width: 100%;
   min-height: 40px;
   display: flex;
   justify-content: center;
@@ -99,17 +181,69 @@
   gap: 1rem;
 }
 
+.userCard-end .buttonFirstMessage {
+  max-width: none;
+  min-height: 40px;
+  border-radius: 8px;
+}
+
 .user-list-select-button {
   background-color: transparent;
   border: 1px solid var(--primary-color);
   color: var(--primary-color);
-  font-width: 600;
-  padding: 0.3rem 1rem;
-  border-radius: 10px;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  min-height: 40px;
+  width: 100%;
+  cursor: pointer;
 }
+
 .user-list-select-button:hover {
   background-color: var(--primary-color);
   color: #fff;
+}
+
+.user-list-select-button-added {
+  background-color: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+  cursor: default;
+}
+
+.users-list-select {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.users-list-select .users-card {
+  min-height: 190px;
+  padding: 0.85rem;
+}
+
+.users-list-select .users-card-image {
+  width: 72px;
+  height: 72px;
+}
+
+.users-list-select .users-card-content p {
+  font-size: 0.82rem;
+}
+
+@media screen and (max-width: 480px) {
+  .users-list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.7rem;
+  }
+
+  .users-card {
+    min-height: 188px;
+    padding: 0.8rem;
+  }
+
+  .users-card-image {
+    width: 68px;
+    height: 68px;
+  }
 }
 
 /* send Message card  */

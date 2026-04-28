@@ -10,10 +10,10 @@ function Search({ search, setSearch }) {
     }, []);
 
     return (
-        <form className="search">
-            <button type='button' className='search-button'><FaSearch color='#333' /></button>
+        <div className="search">
+            <button type="button" type='button' className='search-button'><FaSearch color='#333' /></button>
             <input ref={searchRef} type="text" className="search-input" value={search} onChange={setSearch} placeholder='Search Users' />
-        </form>
+        </div>
     )
 }
 
