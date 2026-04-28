@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { decryptFile } from "../../Hooks/useEncryptFiles";
 import Loading from "./Loading";
+import { FaExclamation } from "react-icons/fa6";
 
 const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
     const [url, setUrl] = useState(null);
+    const [error, setError] = useState(null);
+
 
     useEffect(() => {
         const loadFile = async () => {
@@ -20,7 +23,11 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
                 receiverPrivateKey: privateKey,
             });
 
-            if (!decrypted) return;
+
+            if (!decrypted) {
+                setError("Failed to decrypt file");
+                return;
+            }
 
             const blob = new Blob([decrypted], { type: file.type });
             const objectUrl = URL.createObjectURL(blob);
@@ -35,7 +42,7 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
         };
     }, [file]);
 
-
+    if (error) return <div className="file-error" style={{ padding: ".5rem" }}><FaExclamation color="var(--danger-color)" />{error}</div>;
     if (!url) return <Loading />;
 
     // 📷 Image

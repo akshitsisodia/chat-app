@@ -143,11 +143,9 @@ function Chats({ activeId }) {
 
     return (
         <div className="chats">
-            <div className="chats-header">
-                <div>
-                    <h1 className="chats-heading">Messages</h1>
-                    <p>{chats.length} conversation{chats.length === 1 ? "" : "s"}</p>
-                </div>
+            <div>
+                <h1 className="chats-heading">Messages</h1>
+                {/* <p>{chats.length} conversation{chats.length === 1 ? "" : "s"}</p> */}
             </div>
 
             <div className="chats-buttons">

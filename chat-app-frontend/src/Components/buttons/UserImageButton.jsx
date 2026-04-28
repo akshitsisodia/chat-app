@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom"
 import "../../Styles/Buttons.css"
 
-function UserImageButton({ receiver }) {
+function UserImageButton({ data }) {
     const navigate = useNavigate();
     const imageClickedHandler = () => {
-        navigate(`/users/${receiver?.id}`)
+        navigate(`/users/${data?.id}`)
     }
     return (
         <button className="user-image-button" onClick={imageClickedHandler}>
-            <img src={receiver?.photo} alt={receiver?.name} />
+            <img src={data?.chat_photo} alt={data?.chat_name} />
         </button>
     )
 }

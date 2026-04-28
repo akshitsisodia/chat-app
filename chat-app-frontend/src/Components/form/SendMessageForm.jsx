@@ -138,15 +138,20 @@ function SendMessageForm({ id, receiver, content, setContent }) {
 
     return (
         <form className="sendMessageForm" onSubmit={onSubmitHandler}>
-            <div id="preview" />
-            <div id="preview-file" />
-            {audioUrl && <audio controls src={audioUrl} />}
+
 
             <div className="sendMessageForm-main" >
-                <div className="sendMessageForm-inputs">
-                    {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
-                    {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
-                    <AudioRecordingButton public_key={receiver?.public_key} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} />
+                <div className="sendMessageForm-main-container">
+                    <div className="previews-container">
+                        <div id="preview" />
+                        <div id="preview-file" />
+                        {audioUrl && <audio controls src={audioUrl} />}
+                    </div>
+                    <div className="sendMessageForm-inputs">
+                        {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
+                        {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
+                        <AudioRecordingButton public_key={receiver?.public_key} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} />
+                    </div>
                 </div>
 
                 <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending || isRecording} >

@@ -12,11 +12,16 @@ import { useCall } from "../../Context/CallContext";
 import { useSocket } from "../../Context/SocketContext";
 import UserImageButton from "../buttons/UserImageButton";
 import UserContentButton from "../buttons/UserContentButton";
+import { useChats } from "../../Context/ChatsContext";
 
 function Chat({ id }) {
     const { callUser } = useCall()
     const { socket } = useSocket();
+    const { chats } = useChats();
+
     const queryClient = useQueryClient();
+
+    const chat = chats?.find(curr => curr.chat_id === id)
 
     const [content, setContent] = useState("")
     const [scroll, setScroll] = useState(true);
@@ -132,8 +137,8 @@ function Chat({ id }) {
         <div className="chat">
             <div className="chat-top">
                 <ButtonGoBack />
-                <UserImageButton receiver={receivers[0]} />
-                <UserContentButton receiver={receivers[0]} chatId={id} />
+                <UserImageButton data={chat} />
+                <UserContentButton data={chat} chatId={id} />
                 <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo /></button>
                 <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt /></button>
                 {/* <button className="stream-button" ><FaEllipsisH color="#444" /></button> */}

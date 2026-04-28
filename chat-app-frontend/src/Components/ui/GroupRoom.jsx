@@ -11,6 +11,8 @@ import { useAuth } from "../../Context/AuthContext";
 import ChatRoomTop from "../cards/ChatRoomTop";
 import { useChats } from "../../Context/ChatsContext";
 import { useSocket } from "../../Context/SocketContext";
+import UserImageButton from "../buttons/UserImageButton";
+import UserContentButton from "../buttons/UserContentButton";
 
 function GroupRoom({ activeId }) {
     const { chats } = useChats()
@@ -18,7 +20,7 @@ function GroupRoom({ activeId }) {
     const bottomRef = useRef(null);
 
 
-    const chat = chats?.filter(curr => curr.chat_id === activeId)
+    const chat = chats?.find(curr => curr.chat_id === activeId)
 
     const queryClient = useQueryClient();
     const { socket } = useSocket();
@@ -144,16 +146,12 @@ function GroupRoom({ activeId }) {
 
     return (
         <div className="chat">
-            {/* head  */}
             <div className="chat-top">
                 <ButtonGoBack />
-
-                <ChatRoomTop receiver={receivers[0]} chat={chat[0]}>
-                    {/* <FaEllipsisV /> */}
-                </ChatRoomTop>
+                <UserImageButton data={chat} />
+                <UserContentButton data={chat} chatId={activeId} />
             </div>
 
-            {/* main  */}
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>
                 <GroupMessages bottomRef={bottomRef} receivers={receivers} id={activeId} content={content} messages={messages} />
                 {isFetchingNextPage || !scroll && <div className="loader"></div>}
@@ -162,7 +160,9 @@ function GroupRoom({ activeId }) {
             </div>
 
             {/* input  */}
-            <SendGroupMessageForm groupKey={groupKey} receiver={receivers[0]} id={activeId} content={content} setContent={setContent} />
+            <div className="chat-bottom">
+                <SendGroupMessageForm groupKey={groupKey} receiver={receivers[0]} id={activeId} content={content} setContent={setContent} />
+            </div>
         </div>
     )
 }

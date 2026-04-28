@@ -44,7 +44,6 @@ function ChatProfile() {
                     <p></p>
                 </div>
 
-                {/* top  */}
                 <div className="profile-top">
                     <img src={photo} alt="img" className="profile-image" />
                     <h3 className="profile-name">{name}</h3>

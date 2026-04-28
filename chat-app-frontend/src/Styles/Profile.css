@@ -7,7 +7,7 @@
 .chat-profile::-webkit-scrollbar {
   display: none;
 }
-.chat-profile-header{
+.chat-profile-header {
   padding: 0 1rem;
 }
 .profile-top {
@@ -35,14 +35,14 @@
     gap: 0.2rem;
   }
   & button:hover {
-   background-color: var(--primary-color);
-   color: #fff;
+    background-color: var(--primary-color);
+    color: #fff;
   }
 }
 .profile-members {
   width: 100%;
   box-shadow: 0px -2px 3px #0003;
-  padding: 0.5rem 0;
+  padding: 0.5rem 1rem;
   margin-top: 1rem;
 }
 
@@ -60,7 +60,7 @@
   padding: 1rem;
   border: none;
   background-color: #fff;
-  
+
   & h3 {
     font-weight: 500;
   }
@@ -68,8 +68,8 @@
     color: #999;
   }
 }
-.profile-main-icon{
-    color: #777;
+.profile-main-icon {
+  color: #777;
 }
 .profile-main-button:hover {
   background-color: #eee;
