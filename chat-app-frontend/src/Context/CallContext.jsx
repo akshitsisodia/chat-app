@@ -76,6 +76,7 @@ export const CallProvider = ({ children }) => {
     const peers = useRef(new Map());
     const pendingCandidates = useRef(new Map());
 
+    const [localStreamState, setLocalStreamState] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState({});
     const [isMuted, setIsMuted] = useState(false);
     const [isVideo, setIsVideo] = useState(false);
@@ -88,20 +89,23 @@ export const CallProvider = ({ children }) => {
 
 
     const getMedia = async (video) => {
+        const hasVideo = localStream.current?.getVideoTracks().length > 0;
+
         const needNewStream =
-            !localStream.current ||
-            localStream.current.getVideoTracks().length !== (video ? 1 : 0);
+            !localStream.current || hasVideo !== video;
 
         if (needNewStream) {
-            // stop old stream
             if (localStream.current) {
                 localStream.current.getTracks().forEach(t => t.stop());
             }
 
-            localStream.current = await navigator.mediaDevices.getUserMedia({
-                video: video,
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video,
                 audio: true,
             });
+
+            localStream.current = stream;
+            setLocalStreamState(stream);
         }
 
         return localStream.current;
@@ -156,7 +160,6 @@ export const CallProvider = ({ children }) => {
         }
 
         const stream = await getMedia(state.callType === "video");
-
         if (myVideo.current) myVideo.current.srcObject = stream;
 
         stream.getTracks().forEach(track => {
@@ -190,8 +193,30 @@ export const CallProvider = ({ children }) => {
         });
     }
 
+    const inviteUsersToCall = async (users) => {
+        if (!callId || state.status !== CALL_STATE.CONNECTED) {
+            console.warn("Cannot invite: Call not in progress");
+            return;
+        }
+
+        const newInvitees = users.filter(id => !participants.includes(id) && id !== me?.id);
+
+        if (newInvitees.length === 0) {
+            console.warn("All selected users are already in the call");
+            return;
+        }
+
+        setInvitedUsers(prev => [...new Set([...prev, ...newInvitees])]);
+
+        newInvitees.forEach(user => {
+            socket?.emit("invite-to-call", {
+                to: user.id,
+                callId,
+            });
+        });
+    };
+
     const acceptInvite = () => {
-        console.log("works")
         socket.emit("accept-invite", { callId });
     };
 
@@ -309,7 +334,6 @@ export const CallProvider = ({ children }) => {
         });
     };
     const handleAccepted = async ({ from, answer, callId: incomingCallId }) => {
-        console.log(callId, incomingCallId, "accepted")
         if (incomingCallId !== callId) return;
 
         const pc = peers.current.get(from);
@@ -320,21 +344,19 @@ export const CallProvider = ({ children }) => {
             return;
         }
 
-        // Fixed: Don't overwrite ontrack - it's already set in createPeerConnection
-        // Only set it if it doesn't exist
-        if (!pc.ontrack) {
-            pc.ontrack = (event) => {
-                setRemoteStreams(prev => ({
-                    ...prev,
-                    [from]: event.streams[0]
-                }))
-            };
-        }
+        // if (!pc.ontrack) {
+        //     pc.ontrack = (event) => {
+        //         setRemoteStreams(prev => ({
+        //             ...prev,
+        //             [from]: event.streams[0]
+        //         }))
+        //     };
+        // }
+        // if (pc.remoteDescription) {
+        //     console.warn("Remote description already set");
+        //     return;
+        // }
 
-        if (pc.remoteDescription) {
-            console.warn("Remote description already set");
-            return;
-        }
         await pc.setRemoteDescription(answer);
 
         dispatch({ type: "CONNECTING" });
@@ -350,7 +372,6 @@ export const CallProvider = ({ children }) => {
         pendingCandidates.current.delete(from);
 
         dispatch({ type: "CONNECTED" });
-
     };
 
     const handleRejected = async () => {
@@ -529,34 +550,9 @@ export const CallProvider = ({ children }) => {
         dispatch({ type: "END" });
     }
 
+
     // ---- Invite Members Logic ----
-    const inviteUsersToCall = async (users) => {
-        if (!callId || state.status !== CALL_STATE.CONNECTED) {
-            console.warn("Cannot invite: Call not in progress");
-            return;
-        }
 
-        const newInvitees = users.filter(id => !participants.includes(id) && id !== me?.id);
-
-        if (newInvitees.length === 0) {
-            console.warn("All selected users are already in the call");
-            return;
-        }
-
-        // Update invited users state
-        setInvitedUsers(prev => [...new Set([...prev, ...newInvitees])]);
-
-        // Emit invite event to each user
-        newInvitees.forEach(user => {
-            console.log(users)
-            socket?.emit("invite-to-call", {
-                to: user.id,
-                callId,
-            });
-        });
-
-        console.log(`Invited ${newInvitees.length} users to call`);
-    };
     const handleInviteNotification = ({ from, callId: incomingCallId, invitedBy, callType }) => {
         // Show notification that you're invited to a call
         console.log(`${invitedBy.name} invited you to a ${callType} call`);
@@ -577,6 +573,7 @@ export const CallProvider = ({ children }) => {
         if (incomingCallId !== callId) return;
 
         console.log("New participant joined:", userId);
+
         setParticipants(prev => [...new Set([...prev, userId])]);
 
         // avoid duplicate
@@ -585,7 +582,6 @@ export const CallProvider = ({ children }) => {
         // 1. create peer
         const pc = createPeerConnection({
             onTrack: (event) => {
-                console.log("TRACK Sender", event.streams);
                 setRemoteStreams(prev => ({
                     ...prev,
                     [userId]: event.streams[0]
@@ -614,25 +610,24 @@ export const CallProvider = ({ children }) => {
         // 4. send offer to new user
         socket.emit("new-participant-offer", {
             to: userId,
+            callId,
             offer,
-            callId
         });
     };
     const handleJoinCallSuccess = async ({ participants, callType }) => {
         console.log("Joined call, participants:", participants);
 
         setParticipants(prev => [...new Set([...prev, ...participants])]);
-        dispatch({ type: "CONNECTING" }); // ✅ IMPORTANT
+        dispatch({ type: "CONNECTING" });
 
         const stream = await getMedia(callType === "video");
         if (myVideo.current) myVideo.current.srcObject = stream;
-
     };
 
     const handleNewParticipantOffer = async ({ from, offer, callId: incomingCallId }) => {
         if (incomingCallId !== callId) return;
 
-        console.log("Received offer from new participant:", from);
+        console.log("Received offer from an existing participant:", from);
 
         const pc = createPeerConnection({
             onTrack: (event) => {
@@ -654,12 +649,30 @@ export const CallProvider = ({ children }) => {
         peers.current.set(from, pc);
 
         const stream = await getMedia(state.callType === "video");
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+        stream.getTracks().forEach(track => {
+            const exists = pc.getSenders().some(s => s.track === track);
+            if (!exists) {
+                pc.addTrack(track, stream);
+            }
+        });
 
         await pc.setRemoteDescription(offer);
 
+        const candidates = pendingCandidates.current.get(from) || [];
+        for (const c of candidates) {
+            try {
+                await pc.addIceCandidate(c);
+            } catch (error) {
+                console.warn("Failed to add ICE candidate", error);
+            }
+        }
+        pendingCandidates.current.delete(from);
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+
+        dispatch({ type: "CONNECTED" });
 
         socket.emit("new-participant-answer", {
             to: from,
@@ -673,13 +686,25 @@ export const CallProvider = ({ children }) => {
         const pc = peers.current.get(from);
         if (!pc) return;
 
+        if (!pc || pc.signalingState === "closed") {
+            console.warn("PeerConnection is closed or missing");
+            return;
+        }
+
         await pc.setRemoteDescription(answer);
+
+        const candidates = pendingCandidates.current.get(from) || [];
+        for (const c of candidates) {
+            try {
+                await pc.addIceCandidate(c);
+            } catch (error) {
+                console.warn("Failed to add ICE candidate", error);
+            }
+        }
+        pendingCandidates.current.delete(from);
+
+        dispatch({ type: "CONNECTED" });
     };
-
-
-
-
-
 
     useEffect(() => {
         if (!socket) return;
@@ -799,7 +824,7 @@ export const CallProvider = ({ children }) => {
     }, [socket]);
     // console.log(state)
     return (
-        <CallContext.Provider value={{ state, callUser, acceptCall, acceptInvite, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo, inviteUsersToCall, invitedUsers, showInviteModal, setShowInviteModal, participants }}>
+        <CallContext.Provider value={{ state, callUser, acceptCall, acceptInvite, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo, inviteUsersToCall, invitedUsers, showInviteModal, setShowInviteModal, participants, localStream: localStreamState }}>
             {children}
 
             {/* GLOBAL UI */}
@@ -813,7 +838,12 @@ export const CallProvider = ({ children }) => {
 
             {(state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING || state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.RECONNECTED || state.status === CALL_STATE.RECONNECTING)
                 &&
-                <CallingScreen isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false} isVideoCall={state?.callType === "video" ? true : false} />
+                <CallingScreen
+                    myVideo={myVideo}
+                    localStream={localStreamState}
+                    isCalling={state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING ? true : false}
+                    isVideoCall={state?.callType === "video" ? true : false}
+                />
             }
 
         </CallContext.Provider>

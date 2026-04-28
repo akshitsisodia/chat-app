@@ -10,16 +10,20 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
     const [elapsedSeconds, setElapsedSeconds] = useState(0)
     const {
         state,
+        participants,
+
+        localStream,
+        remoteStreams,
+
         isMuted,
         toggleMute,
         toggleVideo,
-        localStream,
-        remoteStreams,
+
         endCall,
+
         inviteUsersToCall,
         showInviteModal,
         setShowInviteModal,
-        participants
     } = useCall()
 
     const remoteParticipantIds = useMemo(() => {
@@ -51,7 +55,6 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
 
     const connected = state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.RECONNECTED
     const localVideoEnabled = localStream?.getVideoTracks().some(track => track.readyState === 'live' && track.enabled)
-    const statusText = connected ? 'Connected' : isCalling ? 'Calling...' : 'Connecting...'
 
     useEffect(() => {
         if (!connected) return undefined
@@ -72,6 +75,9 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
         return parts.map(part => part.toString().padStart(2, '0')).join(':')
     }
 
+    const statusText = connected ? formatTime() : isCalling ? 'Calling...' : 'Connecting...'
+
+
     const shouldShowVideo = (tile) => {
         if (!isVideoCall || !tile.stream) return false
         if (!tile.isLocal) return true
@@ -82,11 +88,8 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
     return (
         <div className="calling-screen group-call-screen">
             <header className="group-call-header">
-                <div>
-                    <span className="group-call-status">{statusText}</span>
-                    <span className="group-call-time">{formatTime()}</span>
-                </div>
-                <div className="group-call-count">{tiles.length} participant{tiles.length === 1 ? '' : 's'}</div>
+                {tiles.length > 2 && <div className="group-call-count">{tiles.length + " participants"}</div>}
+                <span className="group-call-status">{statusText}</span>
             </header>
 
             <main className={`group-call-grid group-call-grid-${Math.min(tiles.length, 6)}`}>

@@ -7,7 +7,7 @@ const VideoPlayer = React.memo(({ stream, muted = false }) => {
         if (!videoRef.current || !stream) return;
 
         videoRef.current.srcObject = stream;
-    }, [stream]); // ✅ 
+    }, [stream]);
 
     return (
         <video
