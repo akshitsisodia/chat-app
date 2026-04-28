@@ -49,8 +49,11 @@ const initSocket = (server) => {
 
   io.on("connection", (socket) => {
     socket.join(socket.user.id);
-    connectedUsers.set(socket.user.id, socket.id);
     // console.log(`${socket.user.name} Connected`, socket.id);
+
+    const existing = connectedUsers.get(socket.user.id) || new Set();
+    existing.add(socket.id);
+    connectedUsers.set(socket.user.id, existing);
 
     socket.on("joinChat", async (chatId) => {
       socket.join(chatId);
@@ -240,68 +243,57 @@ const initSocket = (server) => {
       }
     });
 
-    // // end call
-    // socket.on("end-call", ({ to, callId }) => {
-    //   const call = activeCalls[callId];
-    //   if (!call) return;
-
-    //   call.participants.forEach((userId) => {
-    //     io.to(userId).emit("end-call");
-    //   });
-
-    //   // remove from memory
-    //   delete activeCalls[callId];
-    // });
-
     //! for Streaming
+    
     socket.on("disconnect", () => {
       const userId = socket.user.id;
 
       setTimeout(() => {
-        // if user reconnected, skip removal
-        if (connectedUsers.get(userId) !== socket.id) {
-          console.log(
-            "User reconnected with new socket, skipping removal:",
-            userId,
-          );
+        const sockets = connectedUsers.get(userId);
+
+        // If user reconnected OR socket already removed → skip
+        if (!sockets || !sockets.has(socket.id)) {
+          console.log("User reconnected, skipping removal:", userId);
           return;
         }
 
-        for (const callId in activeCalls) {
-          const call = activeCalls[callId];
+        // Remove only this socket
+        sockets.delete(socket.id);
 
-          if (call.participants.includes(userId)) {
-            call.participants = call.participants.filter((id) => id !== userId);
+        if (sockets.size === 0) {
+          connectedUsers.delete(userId);
 
-            const remaining = call.participants;
+          // 🔥 Only now treat user as offline
+          for (const callId in activeCalls) {
+            const call = activeCalls[callId];
 
-            // notify others
-            remaining.forEach((id) => {
-              io.to(id).emit("user-left-call", { userId });
-            });
+            if (call.participants.includes(userId)) {
+              call.participants = call.participants.filter(
+                (id) => id !== userId,
+              );
 
-            // if only one left → end call
-            if (remaining.length === 1) {
-              const lastUser = remaining[0];
+              const remaining = call.participants;
 
-              io.to(lastUser).emit("end-call");
+              remaining.forEach((id) => {
+                io.to(id).emit("user-left-call", { userId });
+              });
 
-              delete activeCalls[callId];
-              return;
-            }
+              if (remaining.length === 1) {
+                io.to(remaining[0]).emit("end-call");
+                delete activeCalls[callId];
+                return;
+              }
 
-            // delete call if empty
-            if (call.participants.length === 0) {
-              delete activeCalls[callId];
+              if (remaining.length === 0) {
+                delete activeCalls[callId];
+              }
             }
           }
+        } else {
+          // still has other devices → keep user online
+          connectedUsers.set(userId, sockets);
         }
-      }, 5000); // ⏳ 5 seconds grace period
-
-      // ❗ mark user as disconnected
-      connectedUsers.delete(userId);
-
-      console.log(`${socket?.user?.name} disconnected:`, socket.id);
+      }, 5000);
     });
   });
 

@@ -118,25 +118,7 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                     title={isMuted ? 'Unmute' : 'Mute'}
                     type="button"
                 >
-                    {isMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
-                </button>
-
-                <button
-                    className="group-call-button"
-                    onClick={() => setShowInviteModal(true)}
-                    title="Invite members"
-                    type="button"
-                >
-                    <FaUserPlus />
-                </button>
-
-                <button
-                    className="group-call-button end"
-                    onClick={() => endCall('END')}
-                    title="End call"
-                    type="button"
-                >
-                    <FaPhoneSlash />
+                    <FaMicrophoneSlash />
                 </button>
 
                 {isVideoCall && (
@@ -149,6 +131,28 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                         {localVideoEnabled ? <FaVideo /> : <FaVideoSlash />}
                     </button>
                 )}
+
+                <button
+                    className="group-call-button"
+                    onClick={() => setShowInviteModal(true)}
+                    title="Invite members"
+                    type="button"
+                >
+                    <FaUserPlus />
+                </button>
+
+
+
+                <button
+                    className="group-call-button end"
+                    onClick={() => endCall('END')}
+                    title="End call"
+                    type="button"
+                >
+                    <FaPhoneSlash />
+                </button>
+
+
             </footer>
 
             {showInviteModal && (

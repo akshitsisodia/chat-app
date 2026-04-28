@@ -137,7 +137,12 @@ export const CallProvider = ({ children }) => {
         const stream = await getMedia(video);
         if (myVideo.current) myVideo.current.srcObject = stream;
 
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        stream.getTracks().forEach(track => {
+            const exists = pc.getSenders().some(s => s.track === track);
+            if (!exists) {
+                pc.addTrack(track, stream);
+            }
+        });
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -231,18 +236,17 @@ export const CallProvider = ({ children }) => {
         if (localStream.current) {
             const audioTrack = localStream.current.getAudioTracks()[0];
             if (audioTrack) {
-                audioTrack.enabled = !isMuted;  // Fixed: was isMuted, should be !isMuted
+                audioTrack.enabled = isMuted;
                 setIsMuted(!isMuted);
             }
         }
     };
     const toggleVideo = () => {
         if (localStream.current) {
-            const videotrack = localStream.current.getVideoTracks()[0];
-            if (videotrack) {
-                videotrack.enabled = !isVideo;  // Fixed: was isVideo, should be !isVideo
-                setIsVideo(!isVideo);
-            }
+            const videotrack = localStream.current?.getVideoTracks()?.[0];
+            if (!videotrack) return;
+            videotrack.enabled = isVideo;
+            setIsVideo(!isVideo);
         }
     };
 
@@ -252,6 +256,7 @@ export const CallProvider = ({ children }) => {
         if (localStream.current) {
             localStream.current.getTracks().forEach(track => track.stop());
             localStream.current = null;
+            setLocalStreamState(null);
         }
 
         // Reset mute state when call ends
@@ -343,19 +348,6 @@ export const CallProvider = ({ children }) => {
             console.warn("PeerConnection is closed or missing");
             return;
         }
-
-        // if (!pc.ontrack) {
-        //     pc.ontrack = (event) => {
-        //         setRemoteStreams(prev => ({
-        //             ...prev,
-        //             [from]: event.streams[0]
-        //         }))
-        //     };
-        // }
-        // if (pc.remoteDescription) {
-        //     console.warn("Remote description already set");
-        //     return;
-        // }
 
         await pc.setRemoteDescription(answer);
 
