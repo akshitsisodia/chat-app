@@ -313,12 +313,11 @@ export const CallProvider = ({ children }) => {
     };
 
     const handleIncoming = async ({ user, offer, type, callId: incomingCallId }) => {
-        if (state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.CONNECTING) {
+        if (state.status === CALL_STATE.CONNECTED) {
+            console.log(state)
             socket.emit("reject-call", { to: user.id });
             return
         }
-
-        if (incomingCallId !== callId) return;
 
         setCallId(incomingCallId);
         setParticipants(prev => [...new Set([...prev, user.id])]);
@@ -352,7 +351,7 @@ export const CallProvider = ({ children }) => {
             console.error("Peer creation failed:", err);
             return;
         }
-        
+
         peers.current.set(user.id, pc)
 
         dispatch({
