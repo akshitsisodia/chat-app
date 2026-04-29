@@ -30,9 +30,6 @@ function Login() {
 
 
     <form className="auth-form" onSubmit={onSubmitHandler}>
-      {/* <label htmlFor="name">Name</label> */}
-      {/* <input name='name' type="text" className="auth-name-input" placeholder='Enter your name' required /> */}
-
       <label htmlFor="email">Email<span>*</span></label>
       <input name='email' type="email" value={email} onChange={e => setEmail(e.target.value)} className="auth-email-input" placeholder='Enter your email address' required />
 

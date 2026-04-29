@@ -5,8 +5,10 @@ import Error from "../Components/ui/Error";
 import { useSocket } from "../Context/SocketContext";
 
 function ProtectedRoute({ children }) {
-    const { me, isLoading, error } = useAuth();
+    const { me, isLoading, error, logout } = useAuth();
     const { socket } = useSocket();
+
+
 
     if (isLoading) return <Loading margin={true} />
 
@@ -15,9 +17,12 @@ function ProtectedRoute({ children }) {
     }
 
     if (!socket) return <Loading margin={true} />
-
-
     if (error) return <Error error={error} />
+    const privateKey = localStorage.getItem("privateKey");
+    if (!privateKey) {
+        logout();
+        return <Navigate to="/auth" replace />;
+    }
 
     return children
 }
