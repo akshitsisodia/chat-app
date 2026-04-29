@@ -149,10 +149,8 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                     title="End call"
                     type="button"
                 >
-                    <FaPhoneSlash />
+                    <FaPhoneSlash style={{ transform: "scaleX(-1)" }} />
                 </button>
-
-
             </footer>
 
             {showInviteModal && (

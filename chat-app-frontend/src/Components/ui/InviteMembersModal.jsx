@@ -18,29 +18,26 @@ function InviteMembersModal({ onClose, onInvite, currentParticipants }) {
 
     return (
         <Model onClose={onClose}>
-            <div className="invite-members-modal">
-                <h2>Invite Members to Call</h2>
-                <SearchUsers 
-                    heading="Select Users to Invite" 
-                    select="select" 
-                    setMembers={setSelectedUsers} 
-                    memberIds={selectedUsers}
-                />
-                <div className="invite-modal-actions">
-                    <button 
-                        className="invite-cancel-btn" 
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </button>
-                    <button 
-                        className="invite-confirm-btn" 
-                        onClick={handleInvite}
-                        disabled={selectedUsers.length === 0}
-                    >
-                        <FaUserPlus /> Invite {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}
-                    </button>
-                </div>
+            <SearchUsers
+                heading="Select Users to Invite"
+                select="select"
+                setMembers={setSelectedUsers}
+                memberIds={selectedUsers}
+            />
+            <div className="invite-modal-actions">
+                <button
+                    className="invite-cancel-btn"
+                    onClick={onClose}
+                >
+                    Cancel
+                </button>
+                <button
+                    className="invite-confirm-btn"
+                    onClick={handleInvite}
+                    disabled={selectedUsers.length === 0}
+                >
+                    <FaUserPlus /> Invite {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}
+                </button>
             </div>
         </Model>
     )

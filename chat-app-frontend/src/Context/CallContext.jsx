@@ -312,23 +312,47 @@ export const CallProvider = ({ children }) => {
 
     };
 
-    const handleIncoming = async ({ user, offer, type, callId }) => {
-        setCallId(callId);
+    const handleIncoming = async ({ user, offer, type, callId: incomingCallId }) => {
+        if (state.status === CALL_STATE.CONNECTED || state.status === CALL_STATE.CONNECTING) {
+            socket.emit("reject-call", { to: user.id });
+            return
+        }
+
+        if (incomingCallId !== callId) return;
+
+        setCallId(incomingCallId);
         setParticipants(prev => [...new Set([...prev, user.id])]);
 
-        const pc = createPeerConnection({
-            onTrack: (event) => {
-                setRemoteStreams(prev => ({ ...prev, [user.id]: event.streams[0] }));
-            },
-            onIce: (candidate) => {
-                socket.emit("ice-candidate", {
-                    to: user?.id,
-                    candidate,
-                    callId
-                });
-            }
-        });
+        if (peers.current.has(user.id)) {
+            const oldPc = peers.current.get(user.id);
+            try {
+                oldPc.close();
+            } catch { }
+            peers.current.delete(user.id);
+        }
 
+        let pc;
+        try {
+            pc = createPeerConnection({
+                onTrack: (event) => {
+                    setRemoteStreams(prev => ({
+                        ...prev,
+                        [user.id]: event.streams[0]
+                    }));
+                },
+                onIce: (candidate) => {
+                    socket.emit("ice-candidate", {
+                        to: user.id,
+                        candidate,
+                        callId
+                    });
+                }
+            });
+        } catch (err) {
+            console.error("Peer creation failed:", err);
+            return;
+        }
+        
         peers.current.set(user.id, pc)
 
         dispatch({

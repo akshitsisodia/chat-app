@@ -587,6 +587,7 @@
   transition:
     transform 0.18s ease,
     background 0.18s ease;
+
 }
 
 .group-call-button:hover {
