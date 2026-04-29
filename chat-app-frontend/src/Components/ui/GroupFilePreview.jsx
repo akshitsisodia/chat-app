@@ -53,7 +53,7 @@ function GroupFilePreview({ file, groupKey, imageButtonClicked }) {
         return () => {
             if (url) URL.revokeObjectURL(url);
         };
-    }, [file]);
+    }, [file, groupKey]);
 
 
     if (error) return <div className="file-error" style={{ padding: ".5rem" }}><FaExclamation color="var(--danger-color)" />{error}</div>;

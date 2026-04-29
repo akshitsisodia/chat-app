@@ -148,8 +148,8 @@ function GroupRoom({ activeId }) {
         <div className="chat">
             <div className="chat-top">
                 <ButtonGoBack />
-                <UserImageButton data={chat} />
-                <UserContentButton data={chat} chatId={activeId} />
+                <UserImageButton photo={chat?.chat_photo} name={chat?.chat_name} />
+                <UserContentButton name={chat?.chat_name} chatId={activeId} />
             </div>
 
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>

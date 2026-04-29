@@ -35,37 +35,74 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
     }
 
     const fileInputHandler = async (e) => {
-        const files = e.target.files;
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        // Check current file count in preview
+        const previewDoc = document.getElementById("preview");
+        const currentFileCount = previewDoc.children.length;
+        const newFileCount = files.length;
+        const totalFileCount = currentFileCount + newFileCount;
+
+        // Limit to 5 files
+        if (totalFileCount > 5) {
+            alert(`You can select a maximum of 5 files. You currently have ${currentFileCount} file(s) selected.`);
+            return;
+        }
+
         const formData = new FormData();
-        let defaultContent
 
-        for (let file of files) {
-            const { encryptedBlob, iv } = await encryptGroupFile(id, file, groupKey);
-            // Append encrypted data
-            formData.append("files", encryptedBlob);
-            formData.append("ivs", iv);
-            formData.append("types", file.type);
-            formData.append("names", file.name);
+        // 1. Encrypt ALL files first (parallel + awaited)
+        const encryptedResults = await Promise.all(
+            files.map((file) =>
+                encryptGroupFile(id, file, groupKey)
+            )
+        );
 
-            if (file.type.startsWith("image/")) {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Images" : "Image") : content;
-            } else if (file.type.startsWith("video/")) {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Videos" : "Video") : content;
+        // 2. Append files + metadata in SAME order
+        encryptedResults.forEach((res, i) => {
+            const file = files[i];
+
+            formData.append("files", res.encryptedBlob, file.name);
+
+            formData.append(
+                "meta",
+                JSON.stringify({
+                    iv: res.iv,
+                    type: file.type,
+                    name: file.name,
+                })
+            );
+        });
+
+        // 3. Compute default content ONCE
+        let defaultContent = content;
+
+        if (!content || content.length === 0) {
+            const type = files[0].type;
+
+            if (type.startsWith("image/")) {
+                defaultContent = files.length > 1 ? "Images" : "Image";
+            } else if (type.startsWith("video/")) {
+                defaultContent = files.length > 1 ? "Videos" : "Video";
             } else {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Files" : "File") : content;
+                defaultContent = files.length > 1 ? "Files" : "File";
             }
         }
 
+        // 4. Encrypt message
         const { ciphertext, iv } = await encryptGroupMessage(groupKey, defaultContent);
 
         formData.append("content", uint8ArrayToBase64(new Uint8Array(ciphertext)));
         formData.append("nonce", uint8ArrayToBase64(new Uint8Array(iv)));
 
+        // 5. Set AFTER everything is ready
         setFiles(formData)
 
-        // preview files logic
+        // 6. Preview (safe, sync)
         const preview = document.getElementById("preview");
-        for (let file of files) {
+
+        files.forEach((file) => {
             const url = URL.createObjectURL(file);
 
             if (file.type.startsWith("image/")) {
@@ -73,24 +110,24 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
                 img.src = url;
                 img.classList.add("preview-container");
                 preview.appendChild(img);
-                setChooseFile(false);
             } else if (file.type.startsWith("video/")) {
                 const video = document.createElement("video");
                 video.src = url;
                 video.controls = true;
                 video.classList.add("preview-container");
                 preview.appendChild(video);
-                setChooseFile(false);
             }
             else {
                 const div = document.createElement("div");
                 div.innerHTML = `📄 ${file.name}`;
                 div.classList.add("preview-files-container");
                 preview.appendChild(div);
-                setChooseFile(false);
 
             }
-        }
+        });
+
+        setChooseFile(false);
+
     }
 
     const onSubmitHandler = async (e) => {
@@ -130,17 +167,23 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
     return (
         <form className="sendMessageForm" onSubmit={onSubmitHandler}>
             {/* previews  */}
-            <div id="preview" />
-            <div id="preview-file" />
-            {audioUrl && <audio controls src={audioUrl} />}
+
 
             {/* sending logic  */}
             <div className="sendMessageForm-main" >
-                <div className="sendMessageForm-inputs">
-                    {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
-                    {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
-                    <AudioRecordingButton public_key={groupKey} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} isGroup={true} groupId={id} />
+                <div className="sendMessageForm-main-container">
+                    <div className="previews-container">
+                        <div id="preview" />
+                        <div id="preview-file" />
+                        {audioUrl && <audio controls src={audioUrl} />}
+                    </div>
+                    <div className="sendMessageForm-inputs">
+                        {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
+                        {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
+                        <AudioRecordingButton public_key={groupKey} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} isGroup={true} groupId={id} />
+                    </div>
                 </div>
+
 
                 <button type="submit" className="sendMessageForm-send-button" disabled={uploadMutation.isPending || isRecording} >
                     {!uploadMutation.isPending && <FaPaperPlane color="#fff" />}

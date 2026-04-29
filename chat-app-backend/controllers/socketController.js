@@ -10,7 +10,7 @@ const { validate: isUUID } = require("uuid");
 exports.sendMessageHandler = (socket, io) => async (data) => {
   const client = await pool.connect();
   try {
-    const { content, chatId, nonce } = data;
+    const { chatId, content, nonce } = data;
     const senderId = socket.user.id;
 
     if (!chatId || !nonce) {
@@ -28,7 +28,7 @@ exports.sendMessageHandler = (socket, io) => async (data) => {
       senderId,
     });
     const receiverIds = receivers.map((r) => r.user_id);
-    
+
     // 1. find
     let chat = await ChatModel.findById(chatId);
 

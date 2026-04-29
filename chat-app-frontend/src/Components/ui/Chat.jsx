@@ -131,14 +131,12 @@ function Chat({ id }) {
         return () => socket.off("updateSeen", handler)
     }, [queryClient, id])
 
-
-
     return (
         <div className="chat">
             <div className="chat-top">
                 <ButtonGoBack />
-                <UserImageButton data={chat} />
-                <UserContentButton data={chat} chatId={id} />
+                <UserImageButton photo={receivers[0]?.photo} name={receivers[0]?.name} id={receivers[0]?.user_id} />
+                <UserContentButton name={receivers[0]?.name} email={receivers[0]?.email} chatId={id} />
                 <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, true)}><FaVideo /></button>
                 <button className="stream-button" onClick={() => callUser({ ...receivers[0], id: receivers[0].user_id }, false)}><FaPhoneAlt /></button>
                 {/* <button className="stream-button" ><FaEllipsisH color="#444" /></button> */}

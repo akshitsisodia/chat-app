@@ -25,94 +25,148 @@ function Chats({ activeId }) {
     const newMessageHandler = useCallback((message) => {
         if (!message) return;
 
-        const isActiveChat = activeId && String(activeId) === String(message.chat_id);
+        const isActiveChat =
+            activeId && String(activeId) === String(message.chat_id);
 
+        // 1. Update messages (only if open)
         if (isActiveChat) {
             socket?.emit("seenMessage", message.chat_id);
+
             queryClient.setQueryData(["messages", activeId], (oldData) => {
                 if (!oldData) return oldData;
 
                 return {
                     ...oldData,
-                    pages: oldData.pages.map((page, index) => {
-                        if (index !== 0) return page;
-
-                        return {
-                            ...page,
-                            data: [message, ...page.data],
-                        };
-                    }),
+                    pages: oldData.pages.map((page, i) =>
+                        i === 0
+                            ? { ...page, data: [message, ...page.data] }
+                            : page
+                    ),
                 };
             });
         }
 
+        let shouldNotify = false;
+        let notifyPayload = null;
+
+        // 2. Update chats (PURE logic only)
         queryClient.setQueryData(["chats"], (old) => {
-            if (!old) return old;
+            if (!old?.data) return old;
 
-            let updatedChat = null;
-            const rest = old.data.filter((curr) => {
-                if (curr.chat_id !== message.chat_id) return true;
+            const index = old.data.findIndex(
+                (c) => c.chat_id === message.chat_id
+            );
 
-                updatedChat = {
-                    ...curr,
-                    last_message: message.content,
-                    last_message_time: message.created_at,
-                    nonce: message.nonce,
-                    unread_count: curr.unread_count + 1,
-                };
+            if (index === -1) return old;
 
-                if (me?.id === message.sender_id || isActiveChat) {
-                    updatedChat.unread_count = 0;
-                }
+            const curr = old.data[index];
 
-                if (!activeId && curr.type === "private") {
-                    let content = message.content;
-                    const privateKey = localStorage.getItem("privateKey");
+            const unread_count =
+                me?.id === message.sender_id || isActiveChat
+                    ? 0
+                    : curr.unread_count + 1;
 
-                    if (privateKey && message.content) {
-                        content = decryptMessage(
-                            message.content,
-                            message.nonce,
-                            curr.public_key,
-                            privateKey
-                        );
-                    }
-
-                    showNotification({ ...message, last_message: content });
-                }
-
-                return false;
-            });
-
-            if (!updatedChat) return old;
-
-            return {
-                ...old,
-                data: [updatedChat, ...rest],
+            const updatedChat = {
+                ...curr,
+                last_message: message.content,
+                last_message_time: message.created_at,
+                nonce: message.nonce,
+                unread_count,
             };
+
+            // prepare notification (NO side effects here)
+            if (
+                activeId !== message.chat_id &&
+                curr.type === "private"
+            ) {
+                shouldNotify = true;
+                notifyPayload = { message, curr };
+            }
+
+            // move chat to top
+            const newData = [...old.data];
+            newData.splice(index, 1);
+            newData.unshift(updatedChat);
+
+            return { ...old, data: newData };
         });
+
+        // 3. Run side effects AFTER state update
+        if (shouldNotify && notifyPayload) {
+            try {
+                const { message, curr } = notifyPayload;
+
+                let content = message.content;
+                const privateKey = localStorage.getItem("privateKey");
+
+                if (privateKey && message.content) {
+                    content = decryptMessage(
+                        message.content,
+                        message.nonce,
+                        curr.public_key,
+                        privateKey
+                    );
+                }
+
+                showNotification({
+                    ...message,
+                    last_message: content,
+                });
+
+            } catch (err) {
+                console.error("Notification/decrypt error:", err);
+            }
+        }
+
     }, [activeId, me?.id, queryClient, socket]);
 
     const newChatHandler = useCallback((chat) => {
         if (!chat) return;
 
         queryClient.setQueryData(["chats"], (old) => {
-            if (!old) return old;
+            if (!old?.data) {
+                return {
+                    data: [{
+                        ...chat,
+                        last_message: null,
+                        last_message_time: null,
+                        nonce: null,
+                        unread_count: 0,
+                    }],
+                };
+            }
 
-            const newChat = {
+            const index = old.data.findIndex(
+                (c) => c.chat_id === chat.chat_id
+            );
+
+            const baseChat = {
                 ...chat,
                 last_message: null,
                 last_message_time: null,
                 nonce: null,
                 unread_count: 0,
             };
-            const filtered = old.data.filter((curr) => curr.chat_id !== chat.chat_id);
 
+            // If chat already exists → update & move to top
+            if (index !== -1) {
+                const newData = [...old.data];
+                newData.splice(index, 1);
+                newData.unshift({
+                    ...newData[index],
+                    ...baseChat,
+                });
+
+                return { ...old, data: newData };
+            }
+
+            // If new chat → prepend
             return {
                 ...old,
-                data: [newChat, ...filtered],
+                data: [baseChat, ...old.data],
             };
         });
+
     }, [queryClient]);
 
     useEffect(() => {

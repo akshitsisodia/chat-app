@@ -43,9 +43,7 @@ function Profile({ id }) {
             </div>
             <section className="profile-card">
                 <div className="profile-content">
-                    <div className="profile-avatar-wrap">
-                        <img src={user.photo || fallbackPhoto} alt={user?.name || "User profile"} className="profile-image" />
-                    </div>
+                    <img src={user.photo || fallbackPhoto} alt={user?.name || "User profile"} className="profile-image" />
 
                     <div className="profile-name">
                         <h3>{user?.name || "Unknown user"}</h3>

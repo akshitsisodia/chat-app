@@ -35,41 +35,81 @@ function SendMessageForm({ id, receiver, content, setContent }) {
     }
 
     const fileInputHandler = async (e) => {
-        const files = e.target.files;
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        // Check current file count in preview
+        const previewDoc = document.getElementById("preview");
+        const currentFileCount = previewDoc.children.length;
+        const newFileCount = files.length;
+        const totalFileCount = currentFileCount + newFileCount;
+
+        // Limit to 5 files
+        if (totalFileCount > 5) {
+            alert(`You can select a maximum of 5 files. You currently have ${currentFileCount} file(s) selected.`);
+            return;
+        }
+
         const formData = new FormData();
-        let defaultContent
+        const receiverKey = receiver?.public_key;
 
+        // 1. Encrypt ALL files first (parallel + awaited)
+        const encryptedResults = await Promise.all(
+            files.map((file) =>
+                encryptFile(file, receiverKey)
+            )
+        );
 
-        for (let file of files) {
-            const { encryptedBlob, encryptedKey, nonce, iv } = await encryptFile(file, receiver?.public_key);
+        // 2. Append files + metadata in SAME order
+        encryptedResults.forEach((res, i) => {
+            const file = files[i];
 
-            // Append everything to formData
-            formData.append("files", encryptedBlob);
-            formData.append("keys", encryptedKey);
-            formData.append("nonces", nonce);
-            formData.append("ivs", iv);
-            formData.append("types", file.type);
-            formData.append("names", file.name);
+            formData.append("files", res.encryptedBlob, file.name);
 
-            if (file.type.startsWith("image/")) {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Images" : "Image") : content;
-            } else if (file.type.startsWith("video/")) {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Videos" : "Video") : content;
+            formData.append(
+                "meta",
+                JSON.stringify({
+                    key: res.encryptedKey,
+                    nonce: res.nonce,
+                    iv: res.iv,
+                    type: file.type,
+                    name: file.name,
+                })
+            );
+        });
+
+        // 3. Compute default content ONCE
+        let defaultContent = content;
+
+        if (!content || content.length === 0) {
+            const type = files[0].type;
+
+            if (type.startsWith("image/")) {
+                defaultContent = files.length > 1 ? "Images" : "Image";
+            } else if (type.startsWith("video/")) {
+                defaultContent = files.length > 1 ? "Videos" : "Video";
             } else {
-                defaultContent = content.length === 0 ? (files.length > 1 ? "Files" : "File") : content;
+                defaultContent = files.length > 1 ? "Files" : "File";
             }
         }
 
-        const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), receiver?.public_key);
+        // 4. Encrypt message
+        const encryptedData = encryptMessage(
+            defaultContent,
+            localStorage.getItem("privateKey"),
+            receiverKey
+        );
+
         formData.append("content", encryptedData.encrypted);
         formData.append("nonce", encryptedData.nonce);
 
-        setFiles(formData)
+        // 5. Set AFTER everything is ready
+        setFiles(formData);
 
-        // preview files logic
+        // 6. Preview (safe, sync)
         const preview = document.getElementById("preview");
 
-        for (let file of files) {
+        files.forEach((file) => {
             const url = URL.createObjectURL(file);
 
             if (file.type.startsWith("image/")) {
@@ -77,25 +117,22 @@ function SendMessageForm({ id, receiver, content, setContent }) {
                 img.src = url;
                 img.classList.add("preview-container");
                 preview.appendChild(img);
-                setChooseFile(false)
             } else if (file.type.startsWith("video/")) {
                 const video = document.createElement("video");
                 video.src = url;
                 video.controls = true;
                 video.classList.add("preview-container");
                 preview.appendChild(video);
-                setChooseFile(false)
-            }
-            else {
+            } else {
                 const div = document.createElement("div");
                 div.innerHTML = `📄 ${file.name}`;
                 div.classList.add("preview-files-container");
                 preview.appendChild(div);
-                setChooseFile(false)
-
             }
-        }
-    }
+        });
+
+        setChooseFile(false);
+    };
 
     const onSubmitHandler = (e) => {
         e.preventDefault();
@@ -107,7 +144,7 @@ function SendMessageForm({ id, receiver, content, setContent }) {
             uploadMutation.mutate({
                 id,
                 files
-            })
+            });
             document.getElementById("preview").innerHTML = "";
             return
         }
@@ -125,7 +162,6 @@ function SendMessageForm({ id, receiver, content, setContent }) {
         setContent("")
         document.getElementById("preview").innerHTML = "";
         inputRef.current?.focus();
-        // inputRef?.current?.scrollIntoView({ behavior: "smooth" });
     }
 
     const handleKeyDown = (e) => {
@@ -134,12 +170,8 @@ function SendMessageForm({ id, receiver, content, setContent }) {
         }
     };
 
-
-
     return (
         <form className="sendMessageForm" onSubmit={onSubmitHandler}>
-
-
             <div className="sendMessageForm-main" >
                 <div className="sendMessageForm-main-container">
                     <div className="previews-container">
@@ -160,7 +192,7 @@ function SendMessageForm({ id, receiver, content, setContent }) {
                 </button>
             </div>
         </form>
-    )
+    );
 }
 
 export default SendMessageForm

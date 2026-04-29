@@ -64,8 +64,11 @@ function ChatCard({ data }) {
 
     return (
         <div className="chatCard" onClick={cardClickedHandler}>
-            <button className="chatCard-image" onClick={imageClickedHandler}>
-                <img src={data.chat_photo} alt={data.chat_name} className="chat-photo" />
+            <button
+                // onClick={imageClickedHandler}
+                className="chatCard-image"
+            >
+                <img src={data.photo} alt={data.name} className="chat-photo" />
             </button>
             <button className="chatCard-content" >
                 <h3 className='chatCard-content-top'>{data.chat_name}</h3>

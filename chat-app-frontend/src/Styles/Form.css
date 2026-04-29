@@ -24,15 +24,13 @@
   height: fit-content;
 }
 .sendMessageForm-main-container {
-  width: 100%;
+  width: calc(100% - 3.5rem);
   background-color: #eee;
   border-radius: 10px;
 }
 .previews-container {
   display: flex;
   width: 100%;
-  /* padding: 0.5rem; */
-  padding-bottom: 0;
   overflow-x: scroll;
   /* background-color: red; */
 }
@@ -160,9 +158,10 @@
 #preview {
   padding: 0;
   display: flex;
-  gap: 0.1rem;
+  gap: .3rem;
   overflow: scroll;
   box-sizing: border-box;
+  margin: 0 0.5rem;
 }
 #preview::-webkit-scrollbar {
   display: none;
@@ -172,9 +171,20 @@
   height: 40px;
   object-fit: contain;
   padding: 0;
-  margin: 0.5rem;
-  margin-bottom: 0;
+  margin-top: 0.5rem;
   border-radius: 10px;
+  background-color: #fff;
+}
+.preview-files-container {
+  height: 40px;
+  width: fit-content;
+  background-color: #fff;
+  padding: 0.1rem 0.2rem;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  display: flex;
+  font-size: 0.7rem;
+  overflow: hidden;
 }
 
 /*! Create Group */

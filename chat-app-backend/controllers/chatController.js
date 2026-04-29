@@ -56,12 +56,10 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
 
   // 2. create if not exists
   if (!chat) {
-    try {
-      const receiver = await UserModel.findById(receiverId);
-      if (!receiver) {
-        return next(new CustomError("User not found!", 404));
-      }
+    const receiver = await UserModel.findById(receiverId);
+    if (!receiver) return next(new CustomError("User not found!", 404));
 
+    try {
       chat = await ChatModel.create({
         type,
         name,
@@ -82,14 +80,16 @@ exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
           receiverId,
         });
       }
-      const newChatSender = sanitizeChat(chat, receiver);
-      getIO().to(senderId).emit("newChat", newChatSender);
-      const newChatReceiver = sanitizeChat(chat, req.user);
-      getIO().to(receiverId).emit("newChat", newChatReceiver);
+
     } catch (err) {
-      // race condition safe fallback
       chat = await ChatModel.findByPairKey(pairKey);
     }
+
+    const newChatSender = sanitizeChat(chat, receiver);
+    getIO().to(senderId).emit("newChat", newChatSender);
+
+    const newChatReceiver = sanitizeChat(chat, req.user);
+    getIO().to(receiverId).emit("newChat", newChatReceiver);
   }
 
   res.status(200).json({
@@ -193,7 +193,7 @@ exports.createGroup = asyncErrorHandler(async (req, res, next) => {
         // always try to delete temp file
         try {
           await fs.unlink(req.file.path);
-        } catch {}
+        } catch { }
       }
     }
 

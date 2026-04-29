@@ -9,38 +9,50 @@ const FilePreview = ({ file, senderPublicKey, imageButtonClicked }) => {
 
 
     useEffect(() => {
+        let cancelled = false;
+        let objectUrl;
+
         const loadFile = async () => {
-            const privateKey = localStorage.getItem("privateKey");
+            try {
+                const privateKey = localStorage.getItem("privateKey");
+                if (!privateKey) return;
 
-            if (!privateKey) return;
+                const decrypted = await decryptFile({
+                    fileUrl: file.url,
+                    encryptedKey: file.encrypted_key,
+                    nonce: file.file_nonce,
+                    iv: file.iv,
+                    senderPublicKey,
+                    receiverPrivateKey: privateKey,
+                });
 
-            const decrypted = await decryptFile({
-                fileUrl: file.url,
-                encryptedKey: file.encrypted_key,  //aesKey
-                nonce: file.file_nonce,
-                iv: file.iv,
-                senderPublicKey,
-                receiverPrivateKey: privateKey,
-            });
+                if (cancelled) return;
 
+                if (!decrypted) {
+                    setError("Failed to decrypt file");
+                    return;
+                }
 
-            if (!decrypted) {
-                setError("Failed to decrypt file");
-                return;
+                const blob = new Blob([decrypted], { type: file.type });
+                objectUrl = URL.createObjectURL(blob);
+
+                setUrl(objectUrl);
+
+            } catch (err) {
+                if (!cancelled) {
+                    console.error(err);
+                    setError("Decryption failed");
+                }
             }
-
-            const blob = new Blob([decrypted], { type: file.type });
-            const objectUrl = URL.createObjectURL(blob);
-
-            setUrl(objectUrl);
         };
 
         loadFile();
 
         return () => {
-            if (url) URL.revokeObjectURL(url);
+            cancelled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
         };
-    }, [file]);
+    }, [file, senderPublicKey]);
 
     if (error) return <div className="file-error" style={{ padding: ".5rem" }}><FaExclamation color="var(--danger-color)" />{error}</div>;
     if (!url) return <Loading />;

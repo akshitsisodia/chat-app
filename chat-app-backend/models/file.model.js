@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require("uuid");
 
 const FileModel = {
   async create(
-    { message_id, url, type, name, encrypted_key, iv, nonce },
+    { message_id, url, type, name, encrypted_key, iv, file_nonce },
     client,
   ) {
     const executor = client || pool;
@@ -12,7 +12,7 @@ const FileModel = {
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *
     `;
-    const values = [message_id, url, type, name, encrypted_key, iv, nonce];
+    const values = [message_id, url, type, name, encrypted_key, iv, file_nonce];
     const { rows } = await executor.query(query, values);
     return rows[0];
   },

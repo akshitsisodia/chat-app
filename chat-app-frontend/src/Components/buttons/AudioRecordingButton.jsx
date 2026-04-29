@@ -47,6 +47,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
 
             mediaRecorder.onstop = async () => {
                 const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+
                 const file = new File([blob], `recording-${Date.now()}.webm`, {
                     type: "audio/webm",
                 });
@@ -54,6 +55,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
                 setAudioFile(file);
                 setAudioUrl(URL.createObjectURL(blob));
 
+                // stop stream
                 if (streamRef.current) {
                     streamRef.current.getTracks().forEach((track) => track.stop());
                 }
@@ -64,29 +66,45 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
                 if (isGroup) {
                     const { encryptedBlob, iv } = await encryptGroupFile(groupId, file, public_key);
 
-                    formData.append("files", encryptedBlob);
-                    formData.append("ivs", iv);
-                    formData.append("types", file.type);
-                    formData.append("names", file.name);
+                    formData.append("files", encryptedBlob, file.name);
+
+                    formData.append(
+                        "meta",
+                        JSON.stringify({
+                            iv,
+                            type: file.type,
+                            name: file.name,
+                            // group may not use key/nonce — depends on your design
+                        })
+                    );
 
                     const encryptedData = await encryptGroupMessage(public_key, defaultContent);
 
                     formData.append("content", uint8ArrayToBase64(new Uint8Array(encryptedData.ciphertext)));
                     formData.append("nonce", uint8ArrayToBase64(new Uint8Array(encryptedData.iv)));
                 } else {
+                    // private encryption
                     const { encryptedBlob, encryptedKey, nonce, iv } = await encryptFile(file, public_key);
 
-                    formData.append("files", encryptedBlob);
-                    formData.append("keys", encryptedKey);
-                    formData.append("nonces", nonce);
-                    formData.append("ivs", iv);
-                    formData.append("types", file.type);
-                    formData.append("names", file.name);
+                    formData.append("files", encryptedBlob, file.name);
+
+                    formData.append(
+                        "meta",
+                        JSON.stringify({
+                            key: encryptedKey,
+                            nonce,
+                            iv,
+                            type: file.type,
+                            name: file.name,
+                        })
+                    );
 
                     const encryptedData = encryptMessage(defaultContent, localStorage.getItem("privateKey"), public_key);
+
                     formData.append("content", encryptedData.encrypted);
                     formData.append("nonce", encryptedData.nonce);
                 }
+
                 setFiles(formData);
             };
 
