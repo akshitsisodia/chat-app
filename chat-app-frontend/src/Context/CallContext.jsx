@@ -349,6 +349,20 @@ export const CallProvider = ({ children }) => {
             return;
         }
 
+        if (!pc.ontrack) {
+            pc.ontrack = (event) => {
+                setRemoteStreams(prev => ({
+                    ...prev,
+                    [from]: event.streams[0]
+                }))
+            };
+        }
+
+        if (pc.remoteDescription) {
+            console.warn("Remote description already set");
+            return;
+        }
+
         await pc.setRemoteDescription(answer);
 
         dispatch({ type: "CONNECTING" });
