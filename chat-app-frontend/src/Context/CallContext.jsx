@@ -112,7 +112,38 @@ export const CallProvider = ({ children }) => {
     };
 
     //actions
+    const startGroupCall = async (users, video = false) => {
+        if (!socket) return;
+        if (state.status !== CALL_STATE.IDLE) return;
+
+        const newCallId = crypto.randomUUID();
+        setCallId(newCallId);
+
+        dispatch({ type: "OUTGOING", peer: null, callType: video ? "video" : "audio" });
+
+        let stream;
+        try {
+            stream = await getMedia(video);
+            if (myVideo.current) myVideo.current.srcObject = stream;
+        } catch (err) {
+            console.error("Media error:", err);
+            // optionally show UI error / toast
+            return;
+        }
+
+        setInvitedUsers(users);
+
+        users.forEach(user => {
+            socket?.emit("group-call", {
+                to: user.id,
+                callId: newCallId,
+                callType: video ? "video" : "audio"
+            });
+        });
+    }
+
     const callUser = async (user, video = false) => {
+        if (!socket) return;
         const newCallId = crypto.randomUUID();
         setCallId(newCallId);
         setParticipants([user.id]);
@@ -134,8 +165,15 @@ export const CallProvider = ({ children }) => {
 
         peers.current.set(user.id, pc)
 
-        const stream = await getMedia(video);
-        if (myVideo.current) myVideo.current.srcObject = stream;
+        let stream;
+        try {
+            stream = await getMedia(video);
+            if (myVideo.current) myVideo.current.srcObject = stream;
+        } catch (err) {
+            console.error("Media error:", err);
+            // optionally show UI error / toast
+            return;
+        }
 
         stream.getTracks().forEach(track => {
             const exists = pc.getSenders().some(s => s.track === track);
@@ -853,7 +891,7 @@ export const CallProvider = ({ children }) => {
     }, [socket]);
     // console.log(state)
     return (
-        <CallContext.Provider value={{ state, callUser, acceptCall, acceptInvite, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo, inviteUsersToCall, invitedUsers, showInviteModal, setShowInviteModal, participants, localStream: localStreamState }}>
+        <CallContext.Provider value={{ state, startGroupCall, callUser, acceptCall, acceptInvite, rejectCall, endCall, myVideo, remoteStreams, isMuted, toggleMute, isVideo, toggleVideo, inviteUsersToCall, invitedUsers, showInviteModal, setShowInviteModal, participants, localStream: localStreamState }}>
             {children}
 
             {/* GLOBAL UI */}

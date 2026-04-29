@@ -13,9 +13,12 @@ import { useChats } from "../../Context/ChatsContext";
 import { useSocket } from "../../Context/SocketContext";
 import UserImageButton from "../buttons/UserImageButton";
 import UserContentButton from "../buttons/UserContentButton";
+import { useCall } from "../../Context/CallContext";
+import { FaPhoneAlt, FaVideo } from "react-icons/fa";
 
 function GroupRoom({ activeId }) {
     const { chats } = useChats()
+    const { startGroupCall } = useCall()
 
     const bottomRef = useRef(null);
 
@@ -143,6 +146,8 @@ function GroupRoom({ activeId }) {
     useEffect(() => {
         bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     }, [content, activeId]);
+    const updatedReceivers = receivers?.map(r => { return { ...r, id: r.user_id } })
+    console.log(updatedReceivers)
 
     return (
         <div className="chat">
@@ -150,6 +155,8 @@ function GroupRoom({ activeId }) {
                 <ButtonGoBack />
                 <UserImageButton photo={chat?.chat_photo} name={chat?.chat_name} />
                 <UserContentButton name={chat?.chat_name} chatId={activeId} />
+                <button className="stream-button" onClick={() => startGroupCall(updatedReceivers, true)}><FaVideo /></button>
+                <button className="stream-button" onClick={() => startGroupCall(updatedReceivers, false)}><FaPhoneAlt /></button>
             </div>
 
             <div ref={chatRef} className="chat-main" onScroll={messageScrollHandler}>

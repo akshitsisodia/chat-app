@@ -30,8 +30,8 @@ function ChatProfile() {
         email = chat.email;
     } else {
         const admin = members.find(curr => { return curr.role === "admin" })
-        photo = chat.chat_photo;
-        name = chat.chat_name;
+        photo = chat?.chat_photo;
+        name = chat?.chat_name;
         email = admin?.email
         isGroup = true
     }

@@ -77,8 +77,38 @@ const initSocket = (server) => {
       });
     });
 
+    socket.on("group-call", ({ to, callId, callType }) => {
+      if (!callId || !to) return;
+
+      const existingCall = activeCalls[callId];
+
+      if (existingCall && !existingCall.participants.includes(socket.user.id)) {
+        return; // prevent hijacking
+      }
+
+      if (!activeCalls[callId]) {
+        activeCalls[callId] = {
+          participants: [socket.user.id],
+          callType,
+        };
+      }
+      // send invite
+      io.to(to).emit("invite-notification", {
+        from: socket.user.id,
+        callId,
+        callType,
+        invitedBy: { name: socket.user.name, photo: socket.user.photo },
+      });
+    })
     // receive call request
     socket.on("call-user", ({ to, offer, type, callId }) => {
+      if (!to || typeof to !== "string") return;
+
+      if (!connectedUsers.has(to)) {
+        socket.emit("user-offline");
+        return;
+      }
+
       // create call session
       if (!activeCalls[callId]) {
         activeCalls[callId] = {
@@ -153,6 +183,7 @@ const initSocket = (server) => {
     socket.on("invite-to-call", ({ to, callId }) => {
       const call = activeCalls[callId];
       if (!call || !call.participants.includes(socket.user.id)) return;
+      if (call.participants.includes(to)) return;
 
       io.to(to).emit("invite-notification", {
         from: socket.user.id,
@@ -168,9 +199,7 @@ const initSocket = (server) => {
 
       const userId = socket.user.id;
 
-      if (!call.participants.includes(userId)) {
-        call.participants.push(userId);
-      }
+      call.participants = [...new Set([...call.participants, userId])];
 
       // notify existing participants
       call.participants.forEach((id) => {
@@ -192,6 +221,8 @@ const initSocket = (server) => {
     });
 
     socket.on("new-participant-offer", ({ to, offer, callId }) => {
+      if (!callId) return;
+
       const call = activeCalls[callId];
       if (!call || !call.participants.includes(socket.user.id)) return;
 
@@ -244,7 +275,7 @@ const initSocket = (server) => {
     });
 
     //! for Streaming
-    
+
     socket.on("disconnect", () => {
       const userId = socket.user.id;
 
