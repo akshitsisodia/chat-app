@@ -147,7 +147,6 @@ function GroupRoom({ activeId }) {
         bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     }, [content, activeId]);
     const updatedReceivers = receivers?.map(r => { return { ...r, id: r.user_id } })
-    console.log(updatedReceivers)
 
     return (
         <div className="chat">
