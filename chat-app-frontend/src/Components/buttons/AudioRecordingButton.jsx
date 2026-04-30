@@ -9,7 +9,7 @@ function uint8ArrayToBase64(arr) {
     return btoa(String.fromCharCode(...arr));
 }
 
-function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, setIsRecording, setChooseFile, isGroup = false, groupId }) {
+function AudioRecordingButton({ public_key, keyVersion, setFiles, isRecording, setAudioUrl, setIsRecording, setChooseFile, isGroup = false, groupId }) {
     const streamRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const chunksRef = useRef([]);
@@ -64,7 +64,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
                 let defaultContent = "Audio Message";
 
                 if (isGroup) {
-                    const { encryptedBlob, iv } = await encryptGroupFile(groupId, file, public_key);
+                    const { encryptedBlob, iv } = await encryptGroupFile(file, public_key);
 
                     formData.append("files", encryptedBlob, file.name);
 
@@ -82,6 +82,7 @@ function AudioRecordingButton({ public_key, setFiles, isRecording, setAudioUrl, 
 
                     formData.append("content", uint8ArrayToBase64(new Uint8Array(encryptedData.ciphertext)));
                     formData.append("nonce", uint8ArrayToBase64(new Uint8Array(encryptedData.iv)));
+                    formData.append("key_version", keyVersion);
                 } else {
                     // private encryption
                     const { encryptedBlob, encryptedKey, nonce, iv } = await encryptFile(file, public_key);

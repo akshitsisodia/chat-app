@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const CustomError = require("../utils/CustomError");
 // const { v4: uuidv4 } = require("uuid");
 
 const ChatMemberModel = {
@@ -163,6 +164,7 @@ const ChatMemberModel = {
 
   m.content AS last_message,
   m.nonce,
+  m.key_version AS key_version,
   m.created_at AS last_message_time,
 
   cu.unread_count
@@ -183,7 +185,7 @@ LEFT JOIN users u
 
 
 LEFT JOIN LATERAL (
-  SELECT content, nonce, created_at
+  SELECT content, nonce, created_at, key_version
   FROM messages
   WHERE chat_id = c.id
   ORDER BY created_at DESC
@@ -336,10 +338,11 @@ JOIN users u
   ON u.id = cm.user_id
 
 WHERE cm.chat_id = $1
+  AND cm.status = 'active'
   AND EXISTS (
     SELECT 1 
     FROM chat_members 
-    WHERE chat_id = $1 AND user_id = $2
+    WHERE chat_id = $1 AND user_id = $2 AND status = 'active'
   )
 
 GROUP BY cm.chat_id;
@@ -349,6 +352,137 @@ GROUP BY cm.chat_id;
     const { rows } = await executor.query(query, values);
     return rows[0];
   },
+  async getActiveMembers({ chatId }, client) {
+    const executor = client || pool;
+
+    const { rows } = await executor.query(
+      `SELECT u.id, u.public_key
+     FROM chat_members cm
+     JOIN users u ON u.id = cm.user_id
+     WHERE cm.chat_id = $1 AND cm.status = 'active'`,
+      [chatId]
+    );
+
+    return rows;
+  },
+
+  async leaveChat({ chatId, userId }, client) {
+    const executor = client || pool;
+
+    await executor.query("BEGIN");
+
+    // ensure user is active member
+    const { rowCount } = await executor.query(
+      `SELECT 1 FROM chat_members 
+     WHERE chat_id = $1 
+     AND user_id = $2 
+     AND status = 'active'
+     `,
+      [chatId, userId]
+    );
+
+    if (!rowCount) {
+      throw new CustomError("Not an active member", 400);
+    }
+
+    // mark as left
+    await executor.query(
+      `UPDATE chat_members
+     SET status = 'left', left_at = NOW()
+     WHERE chat_id = $1 AND user_id = $2`,
+      [chatId, userId]
+    );
+
+    await executor.query("COMMIT");
+
+    return true;
+  },
+
+  // async addMember({ chatId, userId }, client) {
+  //   const executor = client || pool;
+
+  //   await executor.query("BEGIN");
+
+  //   const { rows } = await executor.query(
+  //     `SELECT status FROM chat_members
+  //    WHERE chat_id = $1 AND user_id = $2`,
+  //     [chatId, userId]
+  //   );
+
+  //   if (rows.length) {
+  //     // rejoin
+  //     await executor.query(
+  //       `UPDATE chat_members
+  //      SET status = 'active', left_at = NULL
+  //      WHERE chat_id = $1 AND user_id = $2`,
+  //       [chatId, userId]
+  //     );
+  //   } else {
+  //     // new member
+  //     await executor.query(
+  //       `INSERT INTO chat_members (chat_id, user_id, status)
+  //      VALUES ($1, $2, 'active')`,
+  //       [chatId, userId]
+  //     );
+  //   }
+
+  //   await executor.query("COMMIT");
+
+  //   return true;
+  // },
+
+  async addGroupMembers({ chatId, userIds }, client) {
+    const executor = client || pool;
+
+    const values = [];
+    const placeholders = userIds.map((userId, i) => {
+      const base = i * 2;
+      values.push(chatId, userId);
+      return `($${base + 1}, $${base + 2}, 'active')`;
+    });
+
+    const query = `
+    INSERT INTO chat_members (chat_id, user_id, status)
+    VALUES ${placeholders.join(",")}
+    ON CONFLICT (chat_id, user_id)
+    DO UPDATE SET
+      status = 'active',
+      left_at = NULL
+  `;
+
+    await executor.query(query, values);
+
+    return true;
+  },
+  async kickMember({ chatId, adminId, targetUserId }, client) {
+    const executor = client || pool;
+
+    await executor.query("BEGIN");
+
+    // check admin
+    const { rows } = await executor.query(
+      `SELECT role FROM chat_members
+     WHERE chat_id = $1 AND user_id = $2 AND status = 'active'`,
+      [chatId, adminId]
+    );
+
+    if (!rows.length || rows[0].role !== 'admin') {
+      throw new Error("Not authorized");
+    }
+
+    // remove user
+    await executor.query(
+      `UPDATE chat_members
+     SET status = 'removed', left_at = NOW()
+     WHERE chat_id = $1 AND user_id = $2`,
+      [chatId, targetUserId]
+    );
+
+    await executor.query("COMMIT");
+
+    return true;
+  }
+
 };
 
 module.exports = ChatMemberModel;

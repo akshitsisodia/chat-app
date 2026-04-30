@@ -89,6 +89,24 @@ const ChatModel = {
     return rows[0] || null;
   },
 
+  async validateChat({ chatId, userId }, client) {
+    const executor = client || pool;
+
+    const query = `
+    SELECT c.*
+    FROM chats c
+    JOIN chat_members cm ON cm.chat_id = c.id
+    WHERE c.id = $1
+      AND cm.user_id = $2
+      AND cm.status = 'active'
+    LIMIT 1
+  `;
+
+    const { rows } = await executor.query(query, [chatId, userId]);
+
+    return rows[0] || null;
+  }
+  ,
   async updateChat(chatId, client) {
     const executor = client || pool;
 

@@ -12,6 +12,7 @@ const { encryptWithPublicKey } = require("../utils/encryptWithPublicKey");
 const { pool } = require("../config/db");
 const { validate: isUUID } = require("uuid");
 const { getIO } = require("../config/socket");
+const MessageModel = require("../models/message.model");
 
 function sanitizeChat(chat, receiver) {
   return {
@@ -24,6 +25,13 @@ function sanitizeChat(chat, receiver) {
     user_id: receiver.id,
   };
 }
+const sanitizeKeys = (data) =>
+  data.map(k => ({
+    version: k.key_version,
+    encryptedKey: k.encrypted_key,
+    nonce: k.nonce,
+    ephemeralPublicKey: k.ephemeral_public_key
+  }));
 
 exports.getOrCreateChat = asyncErrorHandler(async (req, res, next) => {
   const type = "private";
@@ -107,6 +115,7 @@ exports.getUserChats = asyncErrorHandler(async (req, res, next) => {
     data: chats,
   });
 });
+
 exports.getChatMembers = asyncErrorHandler(async (req, res, next) => {
   const chatId = req.params.id;
   const userId = req.user.id;
@@ -148,6 +157,24 @@ exports.getGroupKeyHandler = asyncErrorHandler(async (req, res, next) => {
       nonce: key.nonce,
       ephemeralPublicKey: key.ephemeral_public_key,
       keyVersion: key.key_version,
+    },
+  });
+});
+
+
+exports.getGroupKeysHandler = asyncErrorHandler(async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.user.id;
+
+  const keys = await GroupKeyModel.getGroupKeys({ chatId, userId });
+
+  const formattedKeys = sanitizeKeys(keys || []);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      latestVersion: formattedKeys.at(-1)?.version || null,
+      keys: formattedKeys
     },
   });
 });
@@ -256,6 +283,147 @@ exports.createGroup = asyncErrorHandler(async (req, res, next) => {
       status: "success",
       data: group,
     });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
+exports.addGroupMembers = asyncErrorHandler(async (req, res, next) => {
+  const chatId = req.params.id;
+  const userId = req.user.id;
+
+  const newMembersIds = req.body.members || []
+  const data = await ChatMemberModel.getChatMembers({ chatId, userId });
+  if (!data) {
+    return next(new CustomError("Chat not found or access denied", 404));
+  }
+  // const isAdmin = data.members.some(
+  //   m => m.id === userId && m.role === "admin"
+  // );
+
+  // if (!isAdmin) {
+  //   return next(new CustomError("Not authorized", 403));
+  // }
+  if (!Array.isArray(newMembersIds) || newMembersIds.length === 0) {
+    return next(new CustomError("Members required!", 400));
+  }
+
+  const uniqueIds = [...new Set(newMembersIds)].filter(id => id !== userId);
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await ChatMemberModel.addGroupMembers({ chatId, memberIds: uniqueIds, userId }, client);
+    const activeMembers = await ChatMemberModel.getActiveMembers({ chatId }, client);
+
+    const groupKey = crypto.randomBytes(32);
+
+    const encryptedKeys = activeMembers.map((user) => {
+      const { encryptedKey, nonce, ephemeralPublicKey } =
+        encryptWithPublicKey(groupKey, user.public_key);
+
+      return {
+        userId: user.id,
+        encryptedKey,
+        nonce,
+        ephemeralPublicKey,
+      };
+    });
+
+    await GroupKeyModel.rotateGroupKey(
+      { chatId, keys: encryptedKeys },
+      client
+    );
+
+    const message = await MessageModel.createSystemMessage(
+      {
+        chatId,
+        senderId: userId,
+        content: `${req.user.name} added ${uniqueIds.length} member(s)`,
+      },
+      client,
+    );
+
+    await client.query("COMMIT");
+    const receiversIds = activeMembers.map(m => m.id)
+
+    io.to(receiversIds).emit("groupMessage", message);
+
+    io.to(chatId).emit("group-key-rotated", { chatId });
+
+    res.status(200).json({
+      status: "success",
+      message: "Members added successfully",
+    });
+
+  } catch (err) {
+    await client.query("ROLLBACK");
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
+exports.leaveGroup = asyncErrorHandler(async (req, res, next) => {
+  const chatId = req.params.chatId;
+  const userId = req.user.id;
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await ChatMemberModel.leaveChat({ chatId, userId }, client);
+
+    const activeMembers = await ChatMemberModel.getActiveMembers({ chatId }, client);
+
+    const groupKey = crypto.randomBytes(32);
+
+    if (activeMembers.length > 0) {
+      const encryptedKeys = activeMembers.map((user) => {
+        const { encryptedKey, nonce, ephemeralPublicKey } =
+          encryptWithPublicKey(groupKey, user.public_key);
+
+        return {
+          userId: user.id,
+          encryptedKey,
+          nonce,
+          ephemeralPublicKey,
+        };
+      });
+
+      await GroupKeyModel.rotateGroupKey(
+        { chatId, keys: encryptedKeys },
+        client
+      );
+    }
+
+    const message = await MessageModel.createSystemMessage(
+      {
+        chatId,
+        senderId: userId,
+        content: `${req.user.name} left the group`,
+      },
+      client,
+    );
+
+    await client.query("COMMIT");
+    const receiversIds = activeMembers.map(m => m.id)
+
+    getIO().to(receiversIds).emit("groupMessage", message);
+
+    getIO().to(chatId).emit("group-key-rotated", { chatId });
+
+    res.status(200).json({
+      status: "success",
+      message: "Group left successfully",
+    });
+
   } catch (err) {
     await client.query("ROLLBACK");
     next(err);

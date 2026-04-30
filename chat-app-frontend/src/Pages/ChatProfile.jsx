@@ -2,8 +2,8 @@ import { useParams } from "react-router-dom"
 import Layout from "../Components/layout/Layout"
 import { useChats } from "../Context/ChatsContext"
 import "../Styles/Profile.css"
-import { useQuery } from "@tanstack/react-query";
-import { getGroupMembers } from "../Services/chatsApi";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getGroupMembers, leaveGroup } from "../Services/chatsApi";
 import UsersList from "../Components/common/UsersList";
 import { FaEdit, FaTimesCircle } from "react-icons/fa";
 import { FaBell, FaClock, FaHeart, FaLock, FaPhone, FaPlus, FaRightFromBracket, FaTelegram, FaThumbsDown, FaTimeline, FaUser, FaUserLock, FaUserPlus, FaVideo } from "react-icons/fa6";
@@ -34,6 +34,20 @@ function ChatProfile() {
         name = chat?.chat_name;
         email = admin?.email
         isGroup = true
+    }
+
+    const leaveGroupMutation = useMutation({
+        mutationFn: leaveGroup,
+        onSuccess: (data) => {
+            console.log(data)
+        },
+        onError: (error) => {
+            console.error(error)
+        }
+    })
+
+    const exitGroupButtonHandler = () => {
+        leaveGroupMutation.mutate(id)
     }
 
     return (
@@ -119,7 +133,7 @@ function ChatProfile() {
                         <FaHeart className="profile-main-icon" />
                         <h3>Add to Favorites</h3>
                     </button>
-                    {isGroup && <button className="profile-main-button">
+                    {isGroup && <button className="profile-main-button" onClick={exitGroupButtonHandler}>
                         <FaRightFromBracket className="profile-main-icon" color="var(--danger-color)" />
                         <h3 style={{ color: "var(--danger-color)" }}>Exit Group</h3>
                     </button>}

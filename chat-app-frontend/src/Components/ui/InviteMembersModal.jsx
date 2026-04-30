@@ -18,12 +18,15 @@ function InviteMembersModal({ onClose, onInvite, currentParticipants }) {
 
     return (
         <Model onClose={onClose}>
-            <SearchUsers
-                heading="Select Users to Invite"
-                select="select"
-                setMembers={setSelectedUsers}
-                memberIds={selectedUsers}
-            />
+            <div className="invite-members-modal">
+                <SearchUsers
+                    heading="Select Users to Invite"
+                    select="select"
+                    setMembers={setSelectedUsers}
+                    memberIds={selectedUsers}
+                />
+            </div>
+
             <div className="invite-modal-actions">
                 <button
                     className="invite-cancel-btn"

@@ -15,15 +15,16 @@ import GroupFileList from "../common/GroupFileList"
 function GroupMessages({ bottomRef, id, content, messages, receivers }) {
 
     const [imageLink, setImageLink] = useState(null)
-    const [groupKey, setGroupKey] = useState(null)
+    // const [groupKey, setGroupKey] = useState(null)
+    const [keyMap, setKeyMap] = useState({});
 
     const { me } = useAuth();
     const { data } = useQuery({
         queryKey: ["group-keys", id],
         queryFn: () => getGroupKeys({ id }),
     });
-
-
+    const keys = data?.data?.keys ?? [];
+    const latestVersion = data?.data?.latestVersion ?? 1;
 
     const imageButtonClicked = (data) => {
         setImageLink(data)
@@ -31,39 +32,38 @@ function GroupMessages({ bottomRef, id, content, messages, receivers }) {
 
     useEffect(() => {
         async function setupKey() {
-            if (!data?.data) return;
+            if (!keys.length) return;
 
             const privateKey = localStorage.getItem("privateKey");
+            const map = {};
 
-            const {
-                encryptedKey,
-                nonce,
-                ephemeralPublicKey,
-            } = data.data;
+            for (const k of keys) {
+                const rawKey = decryptGroupKey(
+                    {
+                        encryptedKey: k.encryptedKey,
+                        nonce: k.nonce,
+                        ephemeralPublicKey: k.ephemeralPublicKey,
+                    },
+                    privateKey
+                );
 
-            // decrypt group key
-            const rawKey = decryptGroupKey(
-                {
-                    encryptedKey,
-                    nonce,
-                    ephemeralPublicKey,
-                },
-                privateKey
-            );
+                if (!rawKey) {
+                    console.error("Failed to decrypt key version", k.version);
+                    continue;
+                }
 
-            if (!rawKey) {
-                console.error("Failed to decrypt key");
-                return;
+                const cryptoKey = await importKey(rawKey);
+
+                map[k.version] = cryptoKey;
             }
 
-            // import AES key
-            const key = await importKey(rawKey);
 
-            // store
-            setCachedKey(id, key);
-            setGroupKey(key)
+            setKeyMap(map);
 
-            console.log("Group key ready");
+            // optional cache
+            setCachedKey(id, map);
+
+            console.log("All group keys ready");
         }
 
         setupKey();
@@ -71,26 +71,48 @@ function GroupMessages({ bottomRef, id, content, messages, receivers }) {
 
 
 
+
     return (
         <>
             <div ref={bottomRef} />
             {messages.length > 0 && messages.map((curr, i) => {
+                const key = keyMap[curr.key_version ?? 1];
+
+                if (!key) {
+                    // optional: skip or show loading
+                    return null;
+                }
+
                 const receiver = receivers.find(r => r.user_id === curr.sender_id)
+
                 return (
                     <div key={curr.id} className="messages">
                         <div className={curr.sender_id === me.id ? "messages-send-container" : "messages-receive-container"}>
 
                             {/* {curr.sender_id === me.id && <FaCheck className="not-seen" color={curr.seen ? "#00d0ff" : "#00d0ff"} />} */}
-                            {curr.sender_id === me.id ?
-                                < GroupSendMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} data={curr} imageButtonClicked={imageButtonClicked} />
-                                :
+                            {curr.sender_id === me.id ? (
+                                < GroupSendMessageCard
+                                    chatId={id}
+                                    groupKey={key}
+                                    nonce={curr?.nonce}
+                                    message={curr?.content}
+                                    data={curr}
+                                    imageButtonClicked={imageButtonClicked}
+                                />
+                            ) : (
                                 <>
                                     {<img className="message-receiver-image" src={receiver.photo} alt="" />}
-                                    <GroupReceiveMessageCard chatId={id} groupKey={groupKey} nonce={curr?.nonce} message={curr?.content} receiver={receiver} data={curr} imageButtonClicked={imageButtonClicked} />
+                                    <GroupReceiveMessageCard
+                                        chatId={id}
+                                        groupKey={key}
+                                        nonce={curr?.nonce}
+                                        message={curr?.content}
+                                        receiver={receiver}
+                                        data={curr}
+                                        imageButtonClicked={imageButtonClicked}
+                                    />
                                 </>
-                            }
-
-
+                            )}
                         </div>
                     </div >
                 )

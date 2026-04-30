@@ -28,7 +28,7 @@ async function createTables() {
       PRIMARY KEY (chat_id, user_id, key_version)
     )
     `);
-    
+
   // users table
   // await pool.query(`
   //   CREATE TABLE IF NOT EXISTS users (
@@ -98,6 +98,7 @@ async function createTables() {
         sender_id UUID REFERENCES users(id),
         content TEXT,
         nonce TEXT,
+        key_version INT NULL,
         created_at TIMESTAMP DEFAULT NOW()
       );
       `);

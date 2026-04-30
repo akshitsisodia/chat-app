@@ -11,12 +11,14 @@ function GroupCard({ data }) {
 
     useEffect(() => {
         async function decryptMessage() {
-            const key = getCachedKey(data.chat_id);
+            const keyMap = getCachedKey(data.chat_id) || {};
+            const key = keyMap[data.key_version ?? 1];
 
             if (!key) {
-                console.warn("Key not ready yet");
                 if (data.unread_count > 0) {
-                    setContent("newMessage")
+                    setContent("🔒 New message");
+                } else {
+                    setContent("");
                 }
                 return;
             }
@@ -25,7 +27,6 @@ function GroupCard({ data }) {
             }
             const ciphertext = base64ToUint8Array(data?.last_message);
             const iv = base64ToUint8Array(data?.nonce);
-
 
             try {
                 const text = await decryptGroupMessage(
@@ -37,19 +38,19 @@ function GroupCard({ data }) {
                 setContent(text);
             } catch (err) {
                 console.error("Decryption failed", err);
+                setContent("❌");
             }
         }
 
         decryptMessage();
-    }, [data.last_message]);
+    }, [data.last_message, data?.key_version]);
 
 
 
     const imageClickedHandler = () => {
-        // navigate(`/users/${data.user_id}`)
+        navigate(`/chats/${data.chat_id}`)
     }
     const cardClickedHandler = async () => {
-        // await queryClient.invalidateQueries(["user"])
         navigate(`/my-groups/${data?.chat_id}`)
     }
 
@@ -80,7 +81,10 @@ function GroupCard({ data }) {
 
     return (
         <div className="chatCard" onClick={cardClickedHandler}>
-            <button className="chatCard-image" onClick={imageClickedHandler}>
+            <button
+                className="chatCard-image"
+            // onClick={imageClickedHandler}
+            >
                 <img src={data.chat_photo} alt={data.chat_name} className="chat-photo" />
             </button>
             <button className="chatCard-content" >

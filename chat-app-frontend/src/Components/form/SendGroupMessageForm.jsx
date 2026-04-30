@@ -19,7 +19,12 @@ function uint8ArrayToBase64(arr) {
 
 function SendGroupMessageForm({ id, receiver, content, setContent }) {
     const { socket } = useSocket()
-    const groupKey = getCachedKey(id);
+    // const groupKey = getCachedKey(id);
+    const keyMap = getCachedKey(id) || {};
+    const versions = Object.keys(keyMap).map(Number);
+
+    const latestVersion = versions.length ? Math.max(...versions) : null;
+    const groupKey = latestVersion ? keyMap[latestVersion] : null;
 
     const inputRef = useRef();
 
@@ -53,9 +58,13 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
         const formData = new FormData();
 
         // 1. Encrypt ALL files first (parallel + awaited)
+        if (!groupKey || !latestVersion) {
+            console.warn("No group key available yet");
+            return;
+        }
         const encryptedResults = await Promise.all(
             files.map((file) =>
-                encryptGroupFile(id, file, groupKey)
+                encryptGroupFile(file, groupKey)
             )
         );
 
@@ -95,6 +104,7 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
 
         formData.append("content", uint8ArrayToBase64(new Uint8Array(ciphertext)));
         formData.append("nonce", uint8ArrayToBase64(new Uint8Array(iv)));
+        formData.append("key_version", latestVersion);
 
         // 5. Set AFTER everything is ready
         setFiles(formData)
@@ -142,11 +152,15 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
             })
         } else {
             const { ciphertext, iv } = await encryptGroupMessage(groupKey, content);
-
+            if (!groupKey || !latestVersion) {
+                alert("Keys not ready yet");
+                return;
+            }
             const data = {
                 chatId: id,
                 content: uint8ArrayToBase64(new Uint8Array(ciphertext)),
                 nonce: uint8ArrayToBase64(new Uint8Array(iv)),
+                key_version: latestVersion
             }
             socket.emit("sendMessage", data)
         }
@@ -166,9 +180,6 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
 
     return (
         <form className="sendMessageForm" onSubmit={onSubmitHandler}>
-            {/* previews  */}
-
-
             {/* sending logic  */}
             <div className="sendMessageForm-main" >
                 <div className="sendMessageForm-main-container">
@@ -180,7 +191,16 @@ function SendGroupMessageForm({ id, receiver, content, setContent }) {
                     <div className="sendMessageForm-inputs">
                         {!isRecording && <ChooseFileButton fileInputHandler={fileInputHandler} chooseFile={chooseFile} setChooseFile={setChooseFile} />}
                         {!isRecording && <textarea ref={inputRef} type="text" className="sendMessageForm-input" rows={1} value={content} onClick={() => setChooseFile(false)} onKeyDown={handleKeyDown} onChange={onContentChangeHandler} placeholder="Type here..." />}
-                        <AudioRecordingButton public_key={groupKey} setFiles={setFiles} isRecording={isRecording} setAudioUrl={setAudioUrl} setIsRecording={setIsRecording} setChooseFile={setChooseFile} isGroup={true} groupId={id} />
+                        <AudioRecordingButton
+                            public_key={groupKey}
+                            keyVersion={latestVersion}
+                            setFiles={setFiles}
+                            isRecording={isRecording}
+                            setAudioUrl={setAudioUrl}
+                            setIsRecording={setIsRecording}
+                            setChooseFile={setChooseFile}
+                            isGroup={true}
+                            groupId={id} />
                     </div>
                 </div>
 

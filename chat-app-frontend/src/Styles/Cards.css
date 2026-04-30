@@ -63,7 +63,7 @@
   flex-direction: column;
   justify-content: space-between;
   /* height: 40px; */
-  gap: .3rem;
+  gap: 0.3rem;
   min-width: 50px;
   align-items: end;
 
@@ -111,7 +111,10 @@
   background: #fff;
   color: #1f2937;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .users-card:hover {
@@ -308,7 +311,7 @@
   flex-direction: column;
 }
 .receiveMessageCard-content {
-  margin: 0.5rem;
+  margin: 0 0.5rem;
   margin-bottom: 0;
   min-width: 30px;
 }

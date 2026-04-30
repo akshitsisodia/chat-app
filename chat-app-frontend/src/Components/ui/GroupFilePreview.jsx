@@ -12,13 +12,11 @@ function GroupFilePreview({ file, groupKey, imageButtonClicked }) {
 
     useEffect(() => {
         const loadFile = async () => {
-            const privateKey = localStorage.getItem("privateKey");
             const key = groupKey;
             if (!key) {
                 console.warn("Key not ready yet");
                 return;
             }
-            if (!privateKey) return;
 
             const res = await fetch(file.url);
             const encryptedBuffer = await res.arrayBuffer();

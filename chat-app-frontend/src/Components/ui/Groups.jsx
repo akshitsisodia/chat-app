@@ -55,6 +55,7 @@ function Groups({ activeId }) {
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
+                            key_version: message.key_version,
                             unread_count: curr.unread_count + 1,
 
                         }

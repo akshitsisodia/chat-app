@@ -2,7 +2,7 @@ const { pool } = require("../config/db");
 const { v4: uuidv4 } = require("uuid");
 
 const MessageModel = {
-  async create({ chatId, senderId, content, nonce }, client) {
+  async create({ chatId, senderId, content, nonce, key_version }, client) {
     const executor = client || pool;
 
     const id = uuidv4();
@@ -14,6 +14,7 @@ const MessageModel = {
     sender_id,
     content,
     nonce,
+    key_version,
     created_at
     )
     VALUES (
@@ -22,12 +23,45 @@ const MessageModel = {
     $3,
     $4,
     $5,
+    $6,
     NOW()
     )
     RETURNING *
     `;
 
-    const values = [id, chatId, senderId, content, nonce];
+    const values = [id, chatId, senderId, content, nonce, key_version];
+
+    const { rows } = await executor.query(query, values);
+
+    return rows[0];
+  },
+
+  async createSystemMessage({ chatId, senderId, content }, client) {
+    const executor = client || pool;
+
+    const id = uuidv4();
+
+    const query = `
+    INSERT INTO messages (
+      id,
+      chat_id,
+      sender_id,
+      content,
+      message_type,
+      created_at
+    )
+    VALUES (
+      $1,
+      $2,
+      $3,
+      $4,
+      'system',
+      NOW()
+    )
+    RETURNING *
+  `;
+
+    const values = [id, chatId, senderId, content];
 
     const { rows } = await executor.query(query, values);
 
@@ -44,6 +78,8 @@ const MessageModel = {
     m.nonce,
     m.sender_id,
     m.created_at,
+    m.key_version,
+    m.message_type,
 
     COALESCE(f.files, '[]') AS files,
 

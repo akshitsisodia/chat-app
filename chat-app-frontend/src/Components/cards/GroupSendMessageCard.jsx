@@ -15,6 +15,9 @@ function GroupSendMessageCard({ chatId, groupKey, message, nonce, data, imageBut
   const diff = now - date.getTime();
   const isWithin24h = diff < 24 * 60 * 60 * 1000;
 
+  const cachedMap = getCachedKey(chatId) || {};
+  const key = cachedMap[data.key_version ?? 1] || groupKey;
+
   let formatted;
   if (isWithin24h) {
     // show time
@@ -32,12 +35,12 @@ function GroupSendMessageCard({ chatId, groupKey, message, nonce, data, imageBut
 
   useEffect(() => {
     async function decryptMessage() {
-      const key = getCachedKey(chatId) || groupKey;
 
       if (!key) {
-        console.warn("Key not ready yet");
+        setContent("🔒");
         return;
       }
+      if (data.message_type !== 'user') return
 
       const ciphertext = base64ToUint8Array(message);
       const iv = base64ToUint8Array(nonce);
@@ -52,26 +55,37 @@ function GroupSendMessageCard({ chatId, groupKey, message, nonce, data, imageBut
         setContent(text);
       } catch (err) {
         console.error("Decryption failed", err);
+        setContent("❌");
       }
     }
 
     decryptMessage();
-  }, [chatId, message, nonce, groupKey]);
+  }, [chatId, message, nonce, data.key_version, key]);
 
-  return <div className="sendMessageCard">
-    {data?.files?.length > 0 && <GroupFileList data={data.files} groupKey={groupKey} imageButtonClicked={imageButtonClicked} />}
+  return (
+    <div className="sendMessageCard">
+      {data?.files?.length > 0
+        &&
+        <GroupFileList
+          data={data.files}
+          groupKey={key}
+          imageButtonClicked={imageButtonClicked}
+        />
+      }
 
-    {content
-      &&
-      <p className="sendMessageCard-content">
+      {data?.message_type === 'user' && <p className="sendMessageCard-content">
         {content || "..."}
+      </p>}
+      {data?.message_type === 'system' && < p className="sendMessageCard-content" style={{ color: "var(--danger-color)" }}>
+        {data.content}
+      </p>}
+
+      <p className="sendMessageCard-seen">
+        {formatted}
+        <FaCheck color={data.seen ? "#00d0ff" : ""} />
       </p>
-    }
-    <p className="sendMessageCard-seen">
-      {formatted}
-      <FaCheck color={data.seen ? "#00d0ff" : ""} />
-    </p>
-  </div>;
+    </div>
+  );
 }
 
 export default GroupSendMessageCard;

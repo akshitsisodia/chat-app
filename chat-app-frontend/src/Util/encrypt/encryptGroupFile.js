@@ -1,7 +1,7 @@
-import { getCachedKey } from "../CachesKeyMap";
-
-const encryptGroupFile = async (groupId, file, groupPublicKey) => {
-  const cryptoKey = await getCachedKey(groupId); // from memory/cache
+const encryptGroupFile = async (file, cryptoKey) => {
+  if (!cryptoKey) {
+    throw new Error("Missing group key");
+  }
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
@@ -13,11 +13,8 @@ const encryptGroupFile = async (groupId, file, groupPublicKey) => {
     buffer,
   );
 
-  // Convert to blob for file like formate
-  const encryptedBlob = new Blob([encryptedBuffer]);
-
   return {
-    encryptedBlob,
+    encryptedBlob: new Blob([encryptedBuffer]),
     iv: btoa(String.fromCharCode(...iv)),
   };
 };

@@ -37,6 +37,7 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
     // Extract and normalize metadata arrays
     const content = req?.body?.content;
     const nonce = req?.body?.nonce;
+    const key_version = req?.body?.key_version;
 
     const metasRaw = req.body.meta
       ? (Array.isArray(req.body.meta) ? req.body.meta : [req.body.meta])
@@ -108,10 +109,9 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
 
     const uploadResults = uploadResultsRaw.map(r => r.value);
 
-    console.log(uploadResults)
     // 2. Fetch chat and receivers in parallel before transaction
     const [chat, receivers] = await Promise.all([
-      ChatModel.findById(chatId),
+      ChatModel.validateChat({ chatId, userId: senderId }),
       ChatMemberModel.findReceiversByChatId({ chatId, senderId }),
     ]);
 
@@ -131,6 +131,7 @@ exports.multiUploadHandler = asyncErrorHandler(async (req, res, next) => {
         senderId,
         content,
         nonce,
+        key_version,
       },
       client,
     );

@@ -16,6 +16,9 @@ function base64ToUint8Array(base64) {
 function GroupReceiveMessageCard({ chatId, message, groupKey, nonce, receiver, data, imageButtonClicked }) {
     const [content, setContent] = useState("");
 
+    const cachedMap = getCachedKey(chatId) || {};
+    const key = cachedMap[data.key_version ?? 1] || groupKey;
+
 
     const date = new Date(data?.created_at);
     const now = Date.now();
@@ -39,12 +42,12 @@ function GroupReceiveMessageCard({ chatId, message, groupKey, nonce, receiver, d
 
     useEffect(() => {
         async function decryptMessage() {
-            const key = getCachedKey(chatId) || groupKey;
 
             if (!key) {
-                console.warn("Key not ready yet");
+                setContent("🔒");
                 return;
             }
+            if (data.message_type !== 'user') return
 
             const ciphertext = base64ToUint8Array(message);
             const iv = base64ToUint8Array(nonce);
@@ -59,31 +62,44 @@ function GroupReceiveMessageCard({ chatId, message, groupKey, nonce, receiver, d
                 setContent(text);
             } catch (err) {
                 console.error("Decryption failed", err);
+                setContent("❌");
             }
         }
 
         decryptMessage();
-    }, [chatId, message, nonce]);
-    return <>
+    }, [chatId, message, nonce, data.key_version, key]);
+
+    return (
         <div className="receiveMessageCard">
             <span style={{
                 fontSize: ".7rem", fontWeight: 600, color: "#aaa", padding: ".5rem"
             }}>{receiver?.name}</span>
 
-            {data?.files?.length > 0 && <GroupFileList data={data.files} groupKey={groupKey} imageButtonClicked={imageButtonClicked} />
+            {data?.files?.length > 0
+                &&
+                <GroupFileList
+                    data={data.files}
+                    groupKey={key}
+                    imageButtonClicked={imageButtonClicked}
+                />
             }
 
-            < p className="receiveMessageCard-content">
+            {data?.message_type === 'user' && < p className="receiveMessageCard-content">
                 {content || "..."}
-            </p>
+            </p>}
+            {data?.message_type === 'system' && < p className="receiveMessageCard-content" style={{
+                color: "var(--primary-color)"
+            }}>
+                {data.content}
+            </p>}
 
             <p className="sendMessageCard-seen">
                 {formatted}
                 {/* <FaCheckDouble color={data.seen ? "#00d0ff" : ""} /> */}
             </p>
 
-        </div>
-    </>
+        </div >
+    )
 
 }
 

@@ -60,6 +60,7 @@
   padding: 1rem;
   border: none;
   background-color: #fff;
+  cursor: pointer;
 
   & h3 {
     font-weight: 500;

@@ -16,11 +16,11 @@ const pool = new Pool({
 });
 
 async function alterTables() {
-//   await pool.query(`
-//          ALTER TABLE group_keys
-// ADD COLUMN nonce TEXT,
-// ADD COLUMN ephemeral_public_key TEXT;
-//           `);
+  //   await pool.query(`
+  //          ALTER TABLE group_keys
+  // ADD COLUMN nonce TEXT,
+  // ADD COLUMN ephemeral_public_key TEXT;
+  //           `);
 
   // await pool.query(`
   //         ALTER TABLE message_files
@@ -47,10 +47,36 @@ async function alterTables() {
   //          ALTER TABLE chat_members ADD COLUMN role TEXT DEFAULT 'member';
   //   `);
 
-  await pool.query(`
-           ALTER TABLE messages
-            ALTER COLUMN nonce DROP NOT NULL;
-    `);
+  // await pool.query(`
+  //          ALTER TABLE messages
+  //           ALTER COLUMN nonce DROP NOT NULL;
+  //   `);
+
+
+  // 30 April updates
+
+  // await pool.query(`
+  //         ALTER TABLE messages 
+  //           ADD COLUMN key_version INT NULL;
+  //   `);
+
+  // await pool.query(`
+  //         ALTER TABLE chat_members
+  //         ADD COLUMN status TEXT NOT NULL DEFAULT 'active',
+  //         ADD COLUMN joined_at TIMESTAMP DEFAULT NOW(),
+  //         ADD COLUMN left_at TIMESTAMP;
+  //   `);
+
+  // await pool.query(`
+  //         ALTER TABLE chat_members
+  //         ADD CONSTRAINT chat_members_status_check
+  //         CHECK (status IN ('active', 'left', 'removed', 'banned'));
+  //   `);
+
+  // await pool.query(`
+  //            ALTER TABLE messages
+  //             ADD COLUMN message_type TEXT NOT NULL DEFAULT 'user'
+  //   `);
 
   console.log("Table altered");
   process.exit();

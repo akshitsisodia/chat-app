@@ -28,6 +28,13 @@ ON group_keys(chat_id, user_id);
   //            CREATE UNIQUE INDEX unique_pair_key ON chats(pair_key);
   //     `);
 
+  // 30 april updates 
+  // await pool.query(`
+  //           CREATE INDEX idx_chat_members_active
+  //           ON chat_members (chat_id, status);
+  //     `);
+
+
   console.log("index added to table");
   process.exit();
 }
