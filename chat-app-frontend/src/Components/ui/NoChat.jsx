@@ -1,7 +1,7 @@
-import { FaSearch } from "react-icons/fa"
+import { FaRegUserCircle, FaSearch, FaUserCircle } from "react-icons/fa"
 import "../../Styles/Ui.css"
 import { useNavigate } from "react-router-dom"
-import { FaPlus } from "react-icons/fa6";
+import { FaMessage, FaPlus } from "react-icons/fa6";
 
 function NoChat() {
     const navigate = useNavigate();
@@ -10,7 +10,23 @@ function NoChat() {
     }
     return (
         <div className="noChat">
-            <div className="noChat-button">
+
+            <div className="noChat-logo-container">
+                <FaMessage />
+            </div>
+            <h3>No Previous Chats.</h3>
+            <div>
+                <p style={{ textAlign: "center" }}>Click here to find users or</p>
+                <p style={{ textAlign: "center" }}>to create group.</p>
+            </div>
+
+            <button type="button" onClick={searchClickedHandler} >
+                <FaPlus />
+                <span>Find Users</span>
+            </button>
+            
+
+            {/* <div className="noChat-button">
                 <button type="button" className="noChat-search-button" onClick={searchClickedHandler} >
                     <FaSearch className="no-chat-searchIcon" />
                 </button>
@@ -21,7 +37,7 @@ function NoChat() {
                     <FaPlus className="no-chat-searchIcon" />
                 </button>
                 <p className="noChat-button-name">Create Group</p>
-            </div>
+            </div> */}
         </div>
     )
 }

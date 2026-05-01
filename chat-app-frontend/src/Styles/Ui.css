@@ -104,12 +104,51 @@
 /* No Chat   */
 
 .noChat {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
   gap: 1rem;
+  padding: 2rem 1rem;
+
+  & h3 {
+    color: #777;
+  }
+  & p {
+    color: #999;
+    font-size: 0.8rem;
+  }
+  & button {
+    border: none;
+    background-color: var(--primary-color);
+    color: #fff;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 5px;
+    min-width: 150px;
+  }
+}
+
+.noChat-logo-container {
+  background-color: #f8f8f8;
+  width: 150px;
+  min-height: 150px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  & svg {
+    font-size: 3rem;
+    color: #ccc;
+  }
 }
 .noChat-button {
   width: fit-content;
@@ -124,12 +163,12 @@
   height: 100px;
   width: 100px;
   border-radius: 10px;
-  background-color: #eee;
-  border: 2px solid #ccc;
+  background-color: var(--light-background);
+  /* border: 2px solid #ccc; */
   font-size: 1.2rem;
 
   & .no-chat-searchIcon {
-    color: #999;
+    color: var(--primary-color);
   }
 }
 .noChat-search-button:hover {
@@ -140,21 +179,67 @@
   }
 }
 .noChat-button-name {
-  color: #777;
+  color: #333;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 /* My Profile */
+
+/* Profile Greeting Section */
+.my-profile-greeting {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.my-profile-greeting h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.my-profile-greeting p {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+/* Profile Greeting Section */
 .my-profile {
   width: 100%;
   height: 100%;
   min-height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
   padding: clamp(1rem, 4vw, 2.5rem);
   box-sizing: border-box;
   background: #fff;
-  overflow-y: auto;
+  overflow-y: scroll;
+  position: relative;
+}
+.my-profile-logout {
+  background-color: #fff;
+  color: var(--danger-color);
+  /* border: 1px solid rgb(255, 178, 178); */
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.my-profile-logout:hover {
+  background-color: var(--danger-color);
+  color: #fff;
 }
 
 .my-profile-content {
@@ -254,7 +339,10 @@
   color: #374151;
   font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .my-profile-actions button:hover {
@@ -463,7 +551,7 @@
   gap: 0.2rem;
   border-radius: 10px;
   width: 100%;
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
 
   & img {
     border-radius: 10px;

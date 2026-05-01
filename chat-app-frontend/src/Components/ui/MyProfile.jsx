@@ -1,12 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import { FaEnvelope, FaPlus, FaUser } from "react-icons/fa6";
-import { FaSearch } from "react-icons/fa";
+import { FaEnvelope, FaImage, FaPlus, FaRightFromBracket, FaUser } from "react-icons/fa6";
+import { FaEdit, FaSearch } from "react-icons/fa";
 import { useAuth } from "../../Context/AuthContext";
 import "../../Styles/Ui.css";
+import Layout from "../layout/Layout";
+import { useState } from "react";
+import UpdatePhotoModel from "../model/UpdatePhotoModel";
+import NoChat from "./NoChat";
+import LogoutButton from "../buttons/LogoutButton";
 
 function MyProfile() {
-    const { me, isLoading, error } = useAuth();
+    const { me, isLoading, error, logout } = useAuth();
     const navigate = useNavigate();
+    const [openUpdatePhoto, setOpenUpdatePhoto] = useState(false)
+
     const fallbackPhoto = "https://i.pinimg.com/736x/62/01/0d/62010d848b790a2336d1542fcda51789.jpg";
 
     if (isLoading) {
@@ -32,6 +39,16 @@ function MyProfile() {
 
     return (
         <div className="my-profile">
+            {openUpdatePhoto && <UpdatePhotoModel onClose={() => setOpenUpdatePhoto(false)} />}
+            <div className="my-profile-logout">
+                Logout <FaRightFromBracket />
+            </div>
+
+            <div className="my-profile-greeting">
+                <h1>Hello, {me.name?.split(" ")[0] || "User"}</h1>
+                <p>Welcome back to your dashboard</p>
+            </div>
+
             <section className="my-profile-content">
                 <div className="my-profile-avatar-wrap">
                     <img src={me.photo || fallbackPhoto} alt={me.name || "My profile"} className="my-profile-avatar" />
@@ -44,16 +61,18 @@ function MyProfile() {
                 </div>
 
                 <div className="my-profile-actions">
-                    <button type="button" onClick={() => navigate("/users")}>
-                        <FaSearch />
-                        <span>Find people</span>
+                    <button type="button" onClick={() => setOpenUpdatePhoto(true)}>
+                        <FaImage />
+                        <span>Update Photo</span>
                     </button>
-                    <button type="button" onClick={() => navigate("/create-group")}>
-                        <FaPlus />
-                        <span>Create group</span>
+                    <button type="button">
+                        <FaEdit />
+                        <span>Edit Profile</span>
                     </button>
                 </div>
             </section>
+
+            {/* <NoChat /> */}
         </div>
     )
 }

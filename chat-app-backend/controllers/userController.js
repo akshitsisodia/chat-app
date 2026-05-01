@@ -1,6 +1,8 @@
+const cloudinary = require("../config/cloudinary");
+const CustomError = require("../utils/CustomError");
+
 const UserModel = require("../models/user.model");
 const asyncErrorHandler = require("../utils/asyncErrorHandler");
-const CustomError = require("../utils/CustomError");
 const sanitizeUser = require("../utils/sanitizeUser");
 
 exports.getAllUsers = asyncErrorHandler(async (req, res, next) => {
@@ -37,6 +39,38 @@ exports.getMe = asyncErrorHandler(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     data: sanitizeUser(user),
+  });
+});
+
+exports.updatePhoto = asyncErrorHandler(async (req, res, next) => {
+  const file = req?.file
+
+  if (!file) {
+    return next(new CustomError("Photo required to update", 400))
+  }
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: "auto",
+    });
+
+    await UserModel.updatePhoto({
+      photo: result.secure_url,
+      userId: req.user.id
+    })
+
+  } catch (err) {
+    return next(new CustomError(`Upload failed: ${err.message}`, 500));
+  } finally {
+    if (file?.path) {
+      try {
+        await fs.unlink(file.path);
+      } catch { }
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Photo updated successfully",
   });
 });
 

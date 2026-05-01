@@ -21,64 +21,81 @@ function Groups({ activeId }) {
 
     chats = chats?.filter(curr => curr.type === "group") ?? []
 
-    useEffect(() => {
-        const handler = (message) => {
-            if (activeId) {
-                socket.emit("seenMessage", message.chat_id)
-                queryClient.setQueryData(["messages", activeId], (oldData) => {
-                    if (!oldData) return oldData;
+    const handler = (message) => {
+        if (!message) return;
 
-                    return {
-                        ...oldData,
-                        pages: oldData.pages.map((page, index) => {
-                            if (index === 0) {
-                                return {
-                                    ...page,
-                                    data: [message, ...page.data],
-                                };
-                            }
-                            return page;
-                        }),
-                    };
-                })
-            }
+        const isActiveChat =
+            activeId && String(activeId) === String(message.chat_id);
 
-            queryClient.setQueryData(["chats"], (old) => {
-                if (!old) return old;
+        if (isActiveChat) {
+            socket.emit("seenMessage", message.chat_id)
 
-                const updated = old.data.map(curr => {
-
-                    if (curr.chat_id === message.chat_id) {
-
-                        const update = {
-                            ...curr,
-                            last_message: message.content,
-                            last_messsage_time: message.created_at,
-                            nonce: message.nonce,
-                            message_type: message.message_type,
-                            key_version: message.key_version,
-                            unread_count: curr.unread_count + 1,
-
-                        }
-
-                        if (me.id === message.sender_id) {
-                            update.unread_count = 0;
-                        }
-
-                        return update;
-                    }
-
-                    return curr
-                })
+            queryClient.setQueryData(["messages", activeId], (oldData) => {
+                if (!oldData) return oldData;
 
                 return {
-                    ...old,
-                    data: updated
+                    ...oldData,
+                    pages: oldData.pages.map((page, i) =>
+                        i === 0
+                            ?
+                            { ...page, data: [message, ...page.data] }
+                            : page
+                    ),
                 };
             })
         }
-        socket.on("groupMessage", handler)
 
+        let shouldNotify = false;
+        let notifyPayload = null;
+
+        // 2. Update chats (PURE logic only)
+        queryClient.setQueryData(["chats"], (old) => {
+            if (!old?.data) return old;
+
+            const index = old.data.findIndex(
+                (c) => c.chat_id === message.chat_id
+            );
+
+            if (index === -1) return old;
+
+            const curr = old.data[index];
+
+            const unread_count =
+                me?.id === message.sender_id || isActiveChat
+                    ? 0
+                    : curr.unread_count + 1;
+
+            const updatedChat = {
+                ...curr,
+                last_message: message.content,
+                last_message_time: message.created_at,
+                nonce: message.nonce,
+                message_type: message.message_type,
+                key_version: message.key_version,
+                unread_count,
+            };
+
+            // prepare notification (NO side effects here)
+            if (
+                activeId !== message.chat_id &&
+                curr.type === "private"
+            ) {
+                shouldNotify = true;
+                notifyPayload = { message, curr };
+            }
+
+            // move chat to top
+            const newData = [...old.data];
+            newData.splice(index, 1);
+            newData.unshift(updatedChat);
+
+            return { ...old, data: newData };
+        });
+        console.log(shouldNotify, notifyPayload)
+
+    }
+    useEffect(() => {
+        socket.on("groupMessage", handler)
         return () => socket.off("groupMessage", handler)
     }, [socket, queryClient, activeId])
 

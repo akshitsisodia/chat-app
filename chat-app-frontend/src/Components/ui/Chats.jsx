@@ -14,6 +14,7 @@ import showNotification from "../../Util/showNotification"
 import { decryptMessage } from "../../Hooks/useEncryptMessage"
 import { useAuth } from "../../Context/AuthContext"
 import { useSocket } from "../../Context/SocketContext"
+import MyProfile from "./MyProfile"
 
 function Chats({ activeId }) {
     const { me } = useAuth();
@@ -223,9 +224,7 @@ function Chats({ activeId }) {
             {error && <p className="chats-error">Could not load conversations.</p>}
 
             {!error && chats.length === 0 ? (
-                <div className="chats-empty">
-                    <NoChat />
-                </div>
+                <NoChat />
             ) : (
                 <div className="chat-Cards">
                     <ChatsList data={chats} activeId={activeId} />

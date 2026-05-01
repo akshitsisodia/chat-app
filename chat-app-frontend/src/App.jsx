@@ -10,6 +10,8 @@ import UserGroupRoom from './Pages/UserGroupRoom'
 import CreateGroup from './Pages/CreateGroup'
 import ChatProfile from './Pages/ChatProfile'
 import SingleUser from './Pages/SingleUser'
+import UpdatePhoto from './Pages/UpdatePhoto'
+import Profile from './Pages/Profile'
 
 
 function App() {
@@ -19,11 +21,11 @@ function App() {
 
       <Route path='/auth' element={<Auth />} />
 
-      {/* <Route path='/update-photo' element={
+      <Route path='/my-profile' element={
         <ProtectedRoute>
-          <UpdatePhoto />
+          <Profile />
         </ProtectedRoute>
-      } /> */}
+      } />
 
       <Route path='/' element={
         <ProtectedRoute>

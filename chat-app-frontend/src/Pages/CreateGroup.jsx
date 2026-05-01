@@ -68,7 +68,6 @@ function CreateGroup() {
         if (file) formData.append("photo", file);
         formData.append("members", JSON.stringify(memberIds));
 
-
         createGroupMutation.mutate(formData)
 
     };

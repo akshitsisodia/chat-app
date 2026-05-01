@@ -263,6 +263,20 @@ const UserModel = {
     return Number(rows[0].count);
   },
 
+  async updatePhoto({ photo, userId }, client) {
+    const executor = client || pool;
+
+    const query = `
+    UPDATE users
+    SET photo = $1
+    WHERE id = $2
+    `;
+    const values = [photo, userId];
+
+    await executor.query(query, values);
+  },
+
+
   //   async setPasswordResetToken(id, token, expiresAt) {
   //     const query = `
   //       UPDATE users
