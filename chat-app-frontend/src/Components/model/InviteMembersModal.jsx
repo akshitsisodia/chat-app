@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import Model from '../model/Model'
-import SearchUsers from './SearchUsers'
+import Model from './Model'
+import SearchUsers from '../ui/SearchUsers'
 import { FaUserPlus } from 'react-icons/fa'
 
 function InviteMembersModal({ onClose, onInvite, currentParticipants }) {

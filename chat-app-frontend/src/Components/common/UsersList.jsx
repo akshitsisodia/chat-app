@@ -44,9 +44,9 @@ function UsersList({ data, select, activeId, memberIds, setMembers }) {
                             <button
                                 type="button"
                                 className={`user-list-select-button ${isAdded ? "user-list-select-button-added" : ""}`}
-                                onClick={() => isAdded ? "" : setMembers(prev => [...prev, curr])}
+                                onClick={() => isAdded ? setMembers(prev => prev.filter(m => m.id !== curr.id)) : setMembers(prev => [...prev, curr])}
                             >
-                                {isAdded ? "Added" : "Add"}
+                                {isAdded ? (select === "remove" ? "Remove" : "Added") : "Add"}
                             </button>
                         )}
                     </article>

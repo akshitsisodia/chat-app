@@ -334,12 +334,14 @@
 
 /* Invite Members Modal Styles */
 .invite-members-modal {
+  width: 100%;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   /* background: linear-gradient(135deg, #0f172a, #1e293b); */
   height: calc(100% - 60px);
   overflow-y: scroll;
-  color: #fff;
+  /* color: #fff; */
 }
 
 .invite-members-modal::-webkit-scrollbar {

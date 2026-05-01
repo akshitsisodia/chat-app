@@ -63,28 +63,39 @@ function GroupSendMessageCard({ chatId, groupKey, message, nonce, data, imageBut
   }, [chatId, message, nonce, data.key_version, key]);
 
   return (
-    <div className="sendMessageCard">
-      {data?.files?.length > 0
-        &&
-        <GroupFileList
-          data={data.files}
-          groupKey={key}
-          imageButtonClicked={imageButtonClicked}
-        />
+    <>
+      {data?.message_type === 'system' &&
+        <div className="senderSystemMessageCard">
+          <p>
+            {data.content}
+          </p>&nbsp;
+          <span >
+            {formatted}
+          </span>
+        </div>
       }
 
-      {data?.message_type === 'user' && <p className="sendMessageCard-content">
-        {content || "..."}
-      </p>}
-      {data?.message_type === 'system' && < p className="sendMessageCard-content" style={{ color: "var(--danger-color)" }}>
-        {data.content}
-      </p>}
+      {data?.message_type === 'user' && <div className="sendMessageCard">
+        {data?.files?.length > 0
+          &&
+          <GroupFileList
+            data={data.files}
+            groupKey={key}
+            imageButtonClicked={imageButtonClicked}
+          />
+        }
 
-      <p className="sendMessageCard-seen">
-        {formatted}
-        <FaCheck color={data.seen ? "#00d0ff" : ""} />
-      </p>
-    </div>
+        <p className="sendMessageCard-content">
+          {content || "..."}
+        </p>
+
+        <p className="sendMessageCard-seen">
+          {formatted}
+          <FaCheck color={data.seen ? "#00d0ff" : ""} />
+        </p>
+      </div>
+      }
+    </>
   );
 }
 

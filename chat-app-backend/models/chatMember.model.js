@@ -165,6 +165,7 @@ const ChatMemberModel = {
   m.content AS last_message,
   m.nonce,
   m.key_version AS key_version,
+  m.message_type,
   m.created_at AS last_message_time,
 
   cu.unread_count
@@ -185,7 +186,7 @@ LEFT JOIN users u
 
 
 LEFT JOIN LATERAL (
-  SELECT content, nonce, created_at, key_version
+  SELECT content, nonce, created_at,message_type, key_version
   FROM messages
   WHERE chat_id = c.id
   ORDER BY created_at DESC

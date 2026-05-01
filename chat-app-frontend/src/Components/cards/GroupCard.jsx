@@ -11,17 +11,18 @@ function GroupCard({ data }) {
 
     useEffect(() => {
         async function decryptMessage() {
-            const keyMap = getCachedKey(data.chat_id) || {};
-            const key = keyMap[data.key_version ?? 1];
+            const keyMap = getCachedKey(data?.chat_id) || {};
+            const key = keyMap[data?.key_version ?? 1];
 
             if (!key) {
-                if (data.unread_count > 0) {
+                if (data?.unread_count > 0) {
                     setContent("🔒 New message");
                 } else {
                     setContent("");
                 }
                 return;
             }
+            if (data?.message_type !== 'user') return
             if (!data?.last_message) {
                 return
             }
@@ -43,7 +44,7 @@ function GroupCard({ data }) {
         }
 
         decryptMessage();
-    }, [data.last_message, data?.key_version]);
+    }, [data?.last_message, data?.key_version, data?.message_type, data?.chat_id]);
 
 
 
@@ -75,9 +76,6 @@ function GroupCard({ data }) {
             month: "short"
         });
     }
-    // date 
-    // const date = new Date(data?.last_message_time)
-    // const time = `${date.getHours()}:${date.getMinutes().toString().length < 2 ? "0" + date.getMinutes().toString() : date.getMinutes().toString()}`
 
     return (
         <div className="chatCard" onClick={cardClickedHandler}>
@@ -89,7 +87,8 @@ function GroupCard({ data }) {
             </button>
             <button className="chatCard-content" >
                 <h4 className='chatCard-content-top'>{data.chat_name}</h4>
-                {content && <p className="chatCard-content-main">{content}</p>}
+                {data?.message_type === 'user' && <p className="chatCard-content-main">{content}</p>}
+                {data?.message_type === 'system' && <p className="chatCard-content-main">{data?.last_message}</p>}
             </button>
             <div className="chatCard-detail">
                 {data?.last_message_time && <p className="chatCard-detail-time">{formatted}</p>}

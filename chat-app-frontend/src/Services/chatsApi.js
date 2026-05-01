@@ -24,6 +24,10 @@ export const getGroupMembers = async ({ id }) => {
   const res = await API.get(`chats/${id}`);
   return res.data;
 };
+export const addGroupMembers = async ({ chatId, newMembers }) => {
+  const res = await API.patch(`chats/add-group-members/${chatId}`, { newMembers });
+  return res.data;
+};
 export const leaveGroup = async (chatId) => {
   const res = await API.patch(`chats/leave-group/${chatId}`);
   return res.data;

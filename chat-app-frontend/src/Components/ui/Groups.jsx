@@ -55,6 +55,7 @@ function Groups({ activeId }) {
                             last_message: message.content,
                             last_messsage_time: message.created_at,
                             nonce: message.nonce,
+                            message_type: message.message_type,
                             key_version: message.key_version,
                             unread_count: curr.unread_count + 1,
 
@@ -105,19 +106,6 @@ function Groups({ activeId }) {
     return (
         <div className="chats">
             <h2 className="chats-heading">Groups</h2>
-
-            {/* <div className="chats-buttons-container">
-                <div className="chats-buttons">
-                    <button type='button' className="chats-go-button chats-go-button-active">General <span style={{ color: "#ccc" }}>{chats.length}</span></button>
-                    <button type='button' className="chats-go-button">Archive</button>
-                </div>
-            </div>
-
-            <button type="button" className="chats-search-button" onClick={() => navigate('/users')}>
-                <p>Search...</p>
-                <FaMagnifyingGlass className="chats-search-magnifying" />
-            </button> */}
-
             <div className="chat-Cards">
                 <ChatsList data={chats} activeId={activeId} />
             </div>

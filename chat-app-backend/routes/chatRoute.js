@@ -9,6 +9,7 @@ const {
   getChatMembers,
   getGroupKeysHandler,
   leaveGroup,
+  addGroupMembers,
 } = require("../controllers/chatController");
 
 const { handleUpload } = require("../controllers/uploadController");
@@ -27,6 +28,7 @@ router.get("/prev-chats", protect, getUserChats);
 router.get("/my-groups", protect, getUserGroups);
 // router.get("/groups-key/:chatId", protect, getGroupKeyHandler);
 router.get("/group-keys/:chatId", protect, getGroupKeysHandler);
+router.patch("/add-group-members/:chatId", protect, addGroupMembers);
 router.patch("/leave-group/:chatId", protect, leaveGroup);
 
 router.get("/:id", protect, getChatMembers);

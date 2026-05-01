@@ -77,29 +77,48 @@ const initSocket = (server) => {
       });
     });
 
-    socket.on("group-call", ({ to, callId, callType }) => {
-      if (!callId || !to) return;
+    socket.on("group-call", ({ users, callId, callType }) => {
+      if (!callId || !users?.length) return;
 
-      const existingCall = activeCalls[callId];
+      let call = activeCalls[callId];
 
-      if (existingCall && !existingCall.participants.includes(socket.user.id)) {
-        return; // prevent hijacking
-      }
-
-      if (!activeCalls[callId]) {
-        activeCalls[callId] = {
+      // Create new call
+      if (!call) {
+        call = activeCalls[callId] = {
+          host: socket.user.id,
           participants: [socket.user.id],
+          invited: new Set(),
           callType,
         };
       }
-      // send invite
-      io.to(to).emit("invite-notification", {
-        from: socket.user.id,
-        callId,
-        callType,
-        invitedBy: { name: socket.user.name, photo: socket.user.photo },
+
+      // Only host or existing participant can invite
+      if (!call.participants.includes(socket.user.id)) {
+        return;
+      }
+
+      const usersToInvite = users.filter(
+        userId =>
+          userId !== socket.user.id &&
+          !call.participants.includes(userId) &&
+          !call.invited.has(userId)
+      );
+
+      usersToInvite.forEach(userId => {
+        call.invited.add(userId);
+
+        io.to(userId).emit("invite-notification", {
+          from: socket.user.id,
+          callId,
+          callType,
+          invitedBy: {
+            name: socket.user.name,
+            photo: socket.user.photo,
+          },
+        });
       });
-    })
+    });
+
     // receive call request
     socket.on("call-user", ({ to, offer, type, callId }) => {
       if (!to || typeof to !== "string") return;

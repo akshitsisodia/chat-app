@@ -292,21 +292,22 @@ exports.createGroup = asyncErrorHandler(async (req, res, next) => {
 });
 
 exports.addGroupMembers = asyncErrorHandler(async (req, res, next) => {
-  const chatId = req.params.id;
+  const chatId = req.params.chatId;
   const userId = req.user.id;
 
-  const newMembersIds = req.body.members || []
+  const newMembersIds = req.body.newMembers || []
+
   const data = await ChatMemberModel.getChatMembers({ chatId, userId });
   if (!data) {
     return next(new CustomError("Chat not found or access denied", 404));
   }
-  // const isAdmin = data.members.some(
-  //   m => m.id === userId && m.role === "admin"
-  // );
+  const isAdmin = data.members.some(
+    m => m.id === userId && m.role === "admin"
+  );
 
-  // if (!isAdmin) {
-  //   return next(new CustomError("Not authorized", 403));
-  // }
+  if (!isAdmin) {
+    return next(new CustomError("Not authorized", 403));
+  }
   if (!Array.isArray(newMembersIds) || newMembersIds.length === 0) {
     return next(new CustomError("Members required!", 400));
   }
@@ -318,7 +319,7 @@ exports.addGroupMembers = asyncErrorHandler(async (req, res, next) => {
   try {
     await client.query("BEGIN");
 
-    await ChatMemberModel.addGroupMembers({ chatId, memberIds: uniqueIds, userId }, client);
+    await ChatMemberModel.addGroupMembers({ chatId, userIds: uniqueIds }, client);
     const activeMembers = await ChatMemberModel.getActiveMembers({ chatId }, client);
 
     const groupKey = crypto.randomBytes(32);
@@ -352,9 +353,9 @@ exports.addGroupMembers = asyncErrorHandler(async (req, res, next) => {
     await client.query("COMMIT");
     const receiversIds = activeMembers.map(m => m.id)
 
-    io.to(receiversIds).emit("groupMessage", message);
+    getIO().to(receiversIds).emit("groupMessage", message);
 
-    io.to(chatId).emit("group-key-rotated", { chatId });
+    getIO().to(receiversIds).emit("group-key-rotated", { chatId });
 
     res.status(200).json({
       status: "success",
@@ -417,7 +418,7 @@ exports.leaveGroup = asyncErrorHandler(async (req, res, next) => {
 
     getIO().to(receiversIds).emit("groupMessage", message);
 
-    getIO().to(chatId).emit("group-key-rotated", { chatId });
+    getIO().to(receiversIds).emit("group-key-rotated", { chatId });
 
     res.status(200).json({
       status: "success",

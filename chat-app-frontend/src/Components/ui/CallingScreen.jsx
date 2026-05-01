@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { FaMicrophoneSlash, FaPhoneSlash, FaVideo, FaMicrophone, FaVideoSlash } from 'react-icons/fa'
 import { FaUserPlus } from 'react-icons/fa6'
 import { useCall } from '../../Context/CallContext'
-import InviteMembersModal from './InviteMembersModal'
+import InviteMembersModal from '../model/InviteMembersModal.jsx'
 import { CALL_STATE } from '../../config/callState'
 import VideoPlayer from './VideoPlayer .jsx'
 

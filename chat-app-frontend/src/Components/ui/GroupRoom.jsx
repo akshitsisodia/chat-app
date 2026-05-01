@@ -139,13 +139,13 @@ function GroupRoom({ activeId }) {
 
         }
         socket?.on("updateSeen", handler)
-
         return () => socket.off("updateSeen", handler)
     }, [queryClient, activeId])
 
     useEffect(() => {
         bottomRef?.current?.scrollIntoView({ behavior: "smooth" });
     }, [content, activeId]);
+
     const updatedReceivers = receivers?.map(r => { return { ...r, id: r.user_id } })
 
     return (

@@ -71,6 +71,8 @@ function Chats({ activeId }) {
                 last_message: message.content,
                 last_message_time: message.created_at,
                 nonce: message.nonce,
+                message_type: message.message_type,
+                key_version: message.key_version,
                 unread_count,
             };
 

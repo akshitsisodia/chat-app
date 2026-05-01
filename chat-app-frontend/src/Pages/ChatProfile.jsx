@@ -1,26 +1,40 @@
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import Layout from "../Components/layout/Layout"
 import { useChats } from "../Context/ChatsContext"
 import "../Styles/Profile.css"
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getGroupMembers, leaveGroup } from "../Services/chatsApi";
+import { addGroupMembers, getGroupMembers, leaveGroup } from "../Services/chatsApi";
 import UsersList from "../Components/common/UsersList";
 import { FaEdit, FaTimesCircle } from "react-icons/fa";
 import { FaBell, FaClock, FaHeart, FaLock, FaPhone, FaPlus, FaRightFromBracket, FaTelegram, FaThumbsDown, FaTimeline, FaUser, FaUserLock, FaUserPlus, FaVideo } from "react-icons/fa6";
 import ButtonGoBack from "../Components/common/ButtonGoBack";
+import { useState } from "react";
+import SelectUsersModel from "../Components/model/SelectUsersModel";
+import CheckSelectedUserModel from "../Components/model/CheckSelectedUserModel";
+import { useCall } from "../Context/CallContext";
 
 function ChatProfile() {
     const { id } = useParams();
     const { chats } = useChats();
+    const { callUser, startGroupCall } = useCall()
+
+    const navigate = useNavigate();
+
     let chat = chats?.find(curr => { return curr.chat_id === id })
     let photo;
     let name;
     let email;
     let isGroup = false;
 
+    const [openSelect, setOpenSelect] = useState(false)
+    const [openCheck, setOpenCheck] = useState(false)
+
+    const [selected, setSelected] = useState([])
+
     const { data, isLoading, error } = useQuery({
         queryKey: ["members", id],
         queryFn: () => getGroupMembers({ id }),
+        retry: false,
     })
     const members = data?.data ?? []
 
@@ -40,6 +54,18 @@ function ChatProfile() {
         mutationFn: leaveGroup,
         onSuccess: (data) => {
             console.log(data)
+            navigate("/")
+
+        },
+        onError: (error) => {
+            console.error(error)
+        }
+    })
+    const addGroupMembersMutation = useMutation({
+        mutationFn: addGroupMembers,
+        onSuccess: (data) => {
+            console.log(data)
+            navigate(`/my-groups/${id}`)
         },
         onError: (error) => {
             console.error(error)
@@ -50,8 +76,27 @@ function ChatProfile() {
         leaveGroupMutation.mutate(id)
     }
 
+    const selectUsersHandler = (data) => {
+        setSelected(data)
+        setOpenCheck(true)
+    }
+
+    const addGroupMembersButtonHandler = (data) => {
+        if (data.length === 0) return
+        const newMembers = data?.map(curr => { return curr.id });
+        addGroupMembersMutation.mutate({ chatId: id, newMembers })
+    }
+    let receiver;
+    if (chat?.type === "private") {
+        receiver = members?.find(curr => curr.id === chat.user_id)
+    }
+
     return (
         <Layout>
+            {openSelect && <SelectUsersModel onClose={() => setOpenSelect(false)} setSelected={selectUsersHandler} />}
+            {openCheck && <CheckSelectedUserModel onClose={() => setOpenCheck(false)} onBack={() => setOpenSelect(true)} selected={selected} addHandler={addGroupMembersButtonHandler} />}
+
+
             <div className="chat-profile">
                 <div className="chat-profile-header">
                     <ButtonGoBack />
@@ -67,15 +112,23 @@ function ChatProfile() {
                     {isGroup && <p style={{ margin: "0 1.5rem", marginTop: "1rem", color: "#999" }}>Group - <span style={{ color: "var(--primary-color)" }}>{members?.length} members</span></p>}
 
                     <div className="profile-buttons">
-                        <button className="profile-add-button">
+                        <button
+                            type="button"
+                            className="profile-add-button"
+                            onClick={() => { chat?.type === "private" ? (receiver ? callUser(receiver, false) : {}) : (members?.length > 1 ? startGroupCall(members, false) : {}) }}
+                        >
                             <FaPhone />
                             Audio
                         </button>
-                        <button className="profile-add-button">
+                        <button
+                            type="button"
+                            className="profile-add-button"
+                            onClick={() => { chat?.type === "private" ? (receiver ? callUser(receiver, true) : {}) : (members?.length > 1 ? startGroupCall(members, true) : {}) }}
+                        >
                             <FaVideo />
                             Video
                         </button>
-                        {isGroup && <button className="profile-add-button">
+                        {isGroup && <button type="button" className="profile-add-button" onClick={() => setOpenSelect(true)}>
                             <FaUserPlus />
                             Add
                         </button>}

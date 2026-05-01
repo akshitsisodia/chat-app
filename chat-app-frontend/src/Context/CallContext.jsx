@@ -133,12 +133,10 @@ export const CallProvider = ({ children }) => {
 
         setInvitedUsers(users);
 
-        users.forEach(user => {
-            socket?.emit("group-call", {
-                to: user.id,
-                callId: newCallId,
-                callType: video ? "video" : "audio"
-            });
+        socket?.emit("group-call", {
+            users: users.map(u => u.id),
+            callId: newCallId,
+            callType: video ? "video" : "audio"
         });
     }
 

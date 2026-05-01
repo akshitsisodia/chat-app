@@ -70,35 +70,45 @@ function GroupReceiveMessageCard({ chatId, message, groupKey, nonce, receiver, d
     }, [chatId, message, nonce, data.key_version, key]);
 
     return (
-        <div className="receiveMessageCard">
-            <span style={{
-                fontSize: ".7rem", fontWeight: 600, color: "#aaa", padding: ".5rem"
-            }}>{receiver?.name}</span>
-
-            {data?.files?.length > 0
-                &&
-                <GroupFileList
-                    data={data.files}
-                    groupKey={key}
-                    imageButtonClicked={imageButtonClicked}
-                />
+        <>
+            {data?.message_type === 'system' &&
+                <div className="receiveSystemMessageCard">
+                    <p>
+                        {data.content}
+                    </p>&nbsp;
+                    <span >
+                        {formatted}
+                    </span>
+                </div>
             }
 
-            {data?.message_type === 'user' && < p className="receiveMessageCard-content">
-                {content || "..."}
-            </p>}
-            {data?.message_type === 'system' && < p className="receiveMessageCard-content" style={{
-                color: "var(--primary-color)"
-            }}>
-                {data.content}
-            </p>}
+            {data?.message_type === 'user' && <div className="receiveMessageCard">
+                <span style={{
+                    fontSize: ".7rem", fontWeight: 600, color: "#aaa", padding: "0rem .2rem", textTransform: "capitalize"
+                }}>{receiver?.name}</span>
 
-            <p className="sendMessageCard-seen">
-                {formatted}
-                {/* <FaCheckDouble color={data.seen ? "#00d0ff" : ""} /> */}
-            </p>
+                {data?.files?.length > 0
+                    &&
+                    <GroupFileList
+                        data={data.files}
+                        groupKey={key}
+                        imageButtonClicked={imageButtonClicked}
+                    />
+                }
 
-        </div >
+                < p className="receiveMessageCard-content">
+                    {content || "..."}
+                </p>
+
+
+                <p className="sendMessageCard-seen">
+                    {formatted}
+                    {/* <FaCheckDouble color={data.seen ? "#00d0ff" : ""} /> */}
+                </p>
+
+            </div >
+            }
+        </>
     )
 
 }
