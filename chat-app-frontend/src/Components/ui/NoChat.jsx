@@ -21,10 +21,10 @@ function NoChat() {
             </div>
 
             <button type="button" onClick={searchClickedHandler} >
-                <FaPlus />
+                <FaSearch />
                 <span>Find Users</span>
             </button>
-            
+
 
             {/* <div className="noChat-button">
                 <button type="button" className="noChat-search-button" onClick={searchClickedHandler} >
