@@ -111,10 +111,7 @@
   background: #fff;
   color: #1f2937;
   box-sizing: border-box;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .users-card:hover {
@@ -140,6 +137,19 @@
   display: block;
   object-fit: cover;
   border-radius: 50%;
+}
+.user-card-role {
+  color: #999;
+  text-transform: capitalize;
+  font-size: small;
+}
+.user-card-role-admin {
+  color: var(--primary-color);
+  text-transform: capitalize;
+  font-size: small;
+  border: 1px solid var(--primary-color);
+  padding: .2rem .5rem;
+  border-radius: 5px;
 }
 
 .users-card-content {

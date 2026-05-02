@@ -13,11 +13,13 @@ import { useSocket } from "../../Context/SocketContext";
 import UserImageButton from "../buttons/UserImageButton";
 import UserContentButton from "../buttons/UserContentButton";
 import { useChats } from "../../Context/ChatsContext";
+import { useAuth } from "../../Context/AuthContext";
 
 function Chat({ id }) {
     const { callUser } = useCall()
     const { socket } = useSocket();
-    const { chats } = useChats();
+    const { chats = [] } = useChats();
+    const { me } = useAuth();
 
     const queryClient = useQueryClient();
 
@@ -94,10 +96,13 @@ function Chat({ id }) {
                             return {
                                 ...page,
                                 data: page.data.map(curr => {
-                                    return {
-                                        ...curr,
-                                        seen: true
+                                    if (curr.sender_id !== me.id) {
+                                        return {
+                                            ...curr,
+                                            seen: true
+                                        }
                                     }
+                                    return curr;
                                 }),
                             };
                         }

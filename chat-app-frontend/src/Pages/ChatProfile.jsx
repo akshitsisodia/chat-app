@@ -86,6 +86,7 @@ function ChatProfile() {
         const newMembers = data?.map(curr => { return curr.id });
         addGroupMembersMutation.mutate({ chatId: id, newMembers })
     }
+
     let receiver;
     if (chat?.type === "private") {
         receiver = members?.find(curr => curr.id === chat.user_id)
@@ -177,7 +178,7 @@ function ChatProfile() {
                 {/* members  */}
                 {isGroup && <div className="profile-members">
                     <p style={{ margin: ".5rem 1.5rem" }}>Members (<span style={{ color: "var(--primary-color)" }}>{members?.length}</span>)</p>
-                    <UsersList data={members} select={"hide"} />
+                    <UsersList data={members} select={"hide"} role={true} />
                 </div>}
 
                 {/* bottom  */}

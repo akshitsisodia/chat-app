@@ -1,7 +1,7 @@
 import ButtonFirstMessage from "./ButtonFirstMessage"
 import { useLocation, useNavigate } from "react-router-dom";
 
-function UsersList({ data, select, activeId, memberIds, setMembers }) {
+function UsersList({ data, select, activeId, memberIds, setMembers, role }) {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -26,7 +26,7 @@ function UsersList({ data, select, activeId, memberIds, setMembers }) {
                         <button className="users-card-image" onClick={() => select ? "" : imageClickedHandler(curr.id)}>
                             <img src={curr?.photo || fallbackPhoto} alt={curr?.name || "User"} />
                         </button>
-
+                        {role && <p className={curr?.role === 'admin' ? "user-card-role-admin" : "user-card-role"}>{curr?.role}</p>}
                         <button className="users-card-content" onClick={() => select ? "" : cardClickedHandler(curr.id)}>
                             <h4>{curr?.name}</h4>
                             <p>{curr?.email}</p>

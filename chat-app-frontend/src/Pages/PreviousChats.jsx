@@ -3,10 +3,10 @@ import Layout from "../Components/layout/Layout"
 import Chats from "../Components/ui/Chats"
 import Loading from "../Components/ui/Loading";
 import MyProfile from "../Components/ui/MyProfile"
-import { useChats } from "../Context/ChatsContext";
+// import { useChats } from "../Context/ChatsContext";
 
 function PreviousChats() {
-  const { chats = [], isLoading, error } = useChats();
+  // const { chats = [], isLoading, error } = useChats();
 
   return (
     <Layout>

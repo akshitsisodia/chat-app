@@ -7,6 +7,7 @@ import "../Styles/Form.css"
 import UsersList from "../Components/common/UsersList";
 import { useNavigate } from "react-router-dom";
 import { FaCamera, FaCheck, FaPlus, FaUserGroup } from "react-icons/fa6";
+import CheckSelectedUserModel from "../Components/model/CheckSelectedUserModel";
 
 
 
@@ -15,9 +16,15 @@ function CreateGroup() {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState("");
     const previewUrlRef = useRef("");
-    const [open, setOpen] = useState(false);
-    const [members, setMembers] = useState([])
     const navigate = useNavigate()
+
+    const [selected, setSelected] = useState([])
+    const [members, setMembers] = useState([])
+
+    const [openSelect, setOpenSelect] = useState(false);
+    const [openCheck, setOpenCheck] = useState(false)
+
+
     const memberIds = members?.map(curr => { return curr.id });
 
     const handlePhotoChange = (e) => {
@@ -39,14 +46,17 @@ function CreateGroup() {
         previewUrlRef.current = url;
         setPreview(url);
     };
+    const selectUsersHandler = (data) => {
+        setSelected(data)
+        setOpenCheck(true)
+    }
 
-    useEffect(() => {
-        return () => {
-            if (previewUrlRef.current) {
-                URL.revokeObjectURL(previewUrlRef.current);
-            }
-        };
-    }, []);
+    const addGroupMembersButtonHandler = (data) => {
+        if (data.length === 0) return
+        setMembers(data)
+
+    }
+
 
 
     const createGroupMutation = useMutation({
@@ -59,6 +69,7 @@ function CreateGroup() {
         }
     })
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -67,14 +78,22 @@ function CreateGroup() {
         formData.append("name", name);
         if (file) formData.append("photo", file);
         formData.append("members", JSON.stringify(memberIds));
-
         createGroupMutation.mutate(formData)
 
     };
+    useEffect(() => {
+        return () => {
+            if (previewUrlRef.current) {
+                URL.revokeObjectURL(previewUrlRef.current);
+            }
+        };
+    }, []);
 
     return (
         <Layout>
-            {open && <SelectUsersModel onClose={() => setOpen(false)} setMembers={setMembers} memberIds={memberIds} />}
+            {openSelect && <SelectUsersModel onClose={() => setOpenSelect(false)} setSelected={selectUsersHandler} />}
+            {openCheck && <CheckSelectedUserModel onClose={() => setOpenCheck(false)} onBack={() => setOpenSelect(true)} selected={selected} addHandler={addGroupMembersButtonHandler} />}
+
 
             <div className="form-wrapper create-group-page">
                 <form className="group-form create-group-form" onSubmit={handleSubmit}>
@@ -123,7 +142,7 @@ function CreateGroup() {
                                 <span>Members</span>
                                 <p>{members.length > 0 ? `${members.length} selected` : "No members selected yet"}</p>
                             </div>
-                            <button type='button' className="add-members-button" onClick={() => setOpen(true)}>
+                            <button type='button' className="add-members-button" onClick={() => setOpenSelect(true)}>
                                 <FaPlus />
                                 <span>Add</span>
                             </button>

@@ -25,6 +25,17 @@ function sanitizeChat(chat, receiver) {
     user_id: receiver.id,
   };
 }
+function sanitizeGroup(group) {
+  return {
+    chat_id: group.id,
+    type: group.type,
+    chat_name: group.name,
+    chat_photo: group.photo,
+    // email: group.created_by ,
+    // public_key: receiver.public_key,
+    // user_id: receiver.id,
+  };
+}
 const sanitizeKeys = (data) =>
   data.map(k => ({
     version: k.key_version,
@@ -278,6 +289,8 @@ exports.createGroup = asyncErrorHandler(async (req, res, next) => {
     );
 
     await client.query("COMMIT");
+
+    getIO().to(memberIds).emit("newChat", sanitizeGroup(group));
 
     res.status(201).json({
       status: "success",

@@ -1,12 +1,18 @@
-import React from 'react'
+import { useEffect } from 'react'
 import Layout from '../Components/layout/Layout'
-import Chat from '../Components/ui/Chat';
 import { useParams } from 'react-router-dom';
 import Groups from '../Components/ui/Groups';
 import GroupRoom from '../Components/ui/GroupRoom';
+import { useChats } from '../Context/ChatsContext';
 
 function UserGroupRoom() {
     const { id } = useParams();
+    const { setActiveConversationId } = useChats();
+
+    useEffect(() => {
+        setActiveConversationId(id);
+        return () => setActiveConversationId(null);
+    }, [id, setActiveConversationId]);
 
     return (
         <Layout>

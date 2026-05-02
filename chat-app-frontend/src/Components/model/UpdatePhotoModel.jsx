@@ -1,17 +1,26 @@
 import React, { useState } from 'react'
 import Model from './Model'
 import { updatePhoto } from '../../Services/userAPI';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MdPhotoCamera, MdClose } from 'react-icons/md'
 import "../../Styles/UpdatePhotoModel.css"
 
 function UpdatePhotoModel({ onClose }) {
     const [photo, setPhoto] = useState(null);
     const [preview, setPreview] = useState(null);
+    const queryClient = useQueryClient();
 
     const updatePhotoMutation = useMutation({
         mutationFn: updatePhoto,
-        onSuccess: (data) => {
+        onSuccess: ({ data }) => {
+            queryClient.setQueryData(["me"], (old) => {
+                if (!old) return old
+                return {
+                    ...old,
+                    data: { ...old.data, photo: data?.photo }
+
+                }
+            })
             onClose()
         },
         onError: (error) => {
@@ -45,9 +54,9 @@ function UpdatePhotoModel({ onClose }) {
                 <div className="update-photo-preview-wrapper">
                     {preview ? (
                         <div className="update-photo-preview-box">
-                            <img 
-                                src={preview} 
-                                alt="preview" 
+                            <img
+                                src={preview}
+                                alt="preview"
                                 className="update-photo-preview-image"
                             />
                             <button
@@ -86,9 +95,9 @@ function UpdatePhotoModel({ onClose }) {
                     </label>
 
                     <div className="update-photo-actions">
-                        <button 
-                            type="submit" 
-                            className="update-photo-button" 
+                        <button
+                            type="submit"
+                            className="update-photo-button"
                             disabled={updatePhotoMutation.isPending || !photo}
                         >
                             {updatePhotoMutation.isPending ? (

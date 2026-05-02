@@ -48,8 +48,9 @@ exports.updatePhoto = asyncErrorHandler(async (req, res, next) => {
   if (!file) {
     return next(new CustomError("Photo required to update", 400))
   }
+  let result
   try {
-    const result = await cloudinary.uploader.upload(req.file.path, {
+    result = await cloudinary.uploader.upload(req.file.path, {
       resource_type: "auto",
     });
 
@@ -71,6 +72,7 @@ exports.updatePhoto = asyncErrorHandler(async (req, res, next) => {
   return res.status(200).json({
     success: true,
     message: "Photo updated successfully",
+    data: { photo: result?.secure_url }
   });
 });
 
