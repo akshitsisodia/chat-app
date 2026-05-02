@@ -98,9 +98,21 @@ function CallingScreen({ isCalling = true, isVideoCall }) {
                         {shouldShowVideo(tile) ? (
                             <VideoPlayer stream={tile.stream} muted={tile.isLocal} />
                         ) : (
-                            <div className="group-call-placeholder" aria-label={`${tile.label} audio only`}>
-                                <div className="group-call-avatar">{tile.label.charAt(0).toUpperCase()}</div>
-                            </div>
+                            <>
+                                <div className="group-call-placeholder" aria-label={`${tile.label} audio only`}>
+                                    <div className="group-call-avatar">{tile.label.charAt(0).toUpperCase()}</div>
+                                </div>
+                                {tile.stream && (
+                                    <audio
+                                        autoPlay
+                                        playsInline
+                                        muted={tile.isLocal}
+                                        ref={(el) => {
+                                            if (el && el.srcObject !== tile.stream) el.srcObject = tile.stream;
+                                        }}
+                                    />
+                                )}
+                            </>
                         )}
                         <div className="group-call-tile-label">
                             <span>{tile.label}</span>

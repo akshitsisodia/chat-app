@@ -17,10 +17,11 @@ function Auth() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (me) {
-            navigate("/");
+        const privateKey = localStorage.getItem("privateKey");
+        if (me && privateKey) {
+            navigate("/", { replace: true });
         }
-    }, [me]);
+    }, [me, navigate]);
 
     const [open, setOpen] = useState(false)
     const [isNext, setNext] = useState(false)
@@ -60,9 +61,9 @@ function Auth() {
 
                     {open && <Register isNext={isNext} setNext={setNext} isContinue={isContinue} setContinue={setContinue} />}
 
-                    {!isNext &&
+                    {/* {!isNext &&
                         <>
-                            <div className="auth-divider"><hr /> or <hr /></div>
+                            <div className="auth-divider"> or </div>
                             <div className="auth-OAuth-buttons">
                                 <button type='button' className="auth-google-button" >
                                     <img src={googleLogo} alt="google" width={20} />
@@ -72,7 +73,7 @@ function Auth() {
                                 </button>
                             </div>
                         </>
-                    }
+                    } */}
 
                 </div>
 

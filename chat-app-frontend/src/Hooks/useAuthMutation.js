@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   loginUser,
   logoutUser,
@@ -8,7 +9,7 @@ import {
 } from "../Services/authAPI";
 import { useAuth } from "../Context/AuthContext";
 import { decryptPrivateKey } from "./usePrivateKeyEncryption";
-import { disconnectSocket, getSocket } from "../Lib/socket";
+import { disconnectSocket } from "../Lib/socket";
 
 export const getLoginMutation = ({ password, setPassword, setEmail }) => {
   const { login } = useAuth();
@@ -70,13 +71,14 @@ export const getRegisterMutation = ({ setPassword, setConPassword }) => {
 
 export const getLogoutMutation = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   return useMutation({
     mutationFn: logoutUser,
     onSuccess: async () => {
       disconnectSocket();
       queryClient.clear();
       localStorage.clear();
-      navigate("/auth");
+      navigate("/auth", { replace: true });
     },
   });
 };

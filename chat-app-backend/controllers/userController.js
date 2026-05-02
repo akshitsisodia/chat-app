@@ -1,5 +1,6 @@
 const cloudinary = require("../config/cloudinary");
 const CustomError = require("../utils/CustomError");
+const fs = require("fs/promises");
 
 const UserModel = require("../models/user.model");
 const asyncErrorHandler = require("../utils/asyncErrorHandler");

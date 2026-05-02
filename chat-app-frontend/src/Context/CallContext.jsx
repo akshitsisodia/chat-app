@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useReducer, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CALL_STATE } from "../config/callState";
-import { getSocket } from "../Lib/socket";
 import IncomingCall from "../Components/ui/IncomingCall";
 import CallingScreen from "../Components/ui/CallingScreen";
 
@@ -82,6 +81,13 @@ export const CallProvider = ({ children }) => {
     const [isVideo, setIsVideo] = useState(false);
 
     const [callId, setCallId] = useState(null);
+    /** Must match `callId` state immediately — socket events can arrive before React re-renders. */
+    const callIdRef = useRef(null);
+    const stateRef = useRef(state);
+    useLayoutEffect(() => {
+        stateRef.current = state;
+    }, [state]);
+
     const [participants, setParticipants] = useState([]); // userIds
     const [invitedUsers, setInvitedUsers] = useState([]); // Track invited users
     const [showInviteModal, setShowInviteModal] = useState(false); // Modal state for inviting users
@@ -117,6 +123,7 @@ export const CallProvider = ({ children }) => {
         if (state.status !== CALL_STATE.IDLE) return;
 
         const newCallId = crypto.randomUUID();
+        callIdRef.current = newCallId;
         setCallId(newCallId);
 
         dispatch({ type: "OUTGOING", peer: null, callType: video ? "video" : "audio" });
@@ -143,6 +150,7 @@ export const CallProvider = ({ children }) => {
     const callUser = async (user, video = false) => {
         if (!socket) return;
         const newCallId = crypto.randomUUID();
+        callIdRef.current = newCallId;
         setCallId(newCallId);
         setParticipants([user.id]);
 
@@ -230,12 +238,12 @@ export const CallProvider = ({ children }) => {
         socket?.emit("answer-call", {
             to: state.peer.id,
             answer,
-            callId
+            callId: callIdRef.current
         });
     }
 
     const inviteUsersToCall = async (users) => {
-        if (!callId || state.status !== CALL_STATE.CONNECTED) {
+        if (!callIdRef.current || state.status !== CALL_STATE.CONNECTED) {
             console.warn("Cannot invite: Call not in progress");
             return;
         }
@@ -252,13 +260,13 @@ export const CallProvider = ({ children }) => {
         newInvitees.forEach(user => {
             socket?.emit("invite-to-call", {
                 to: user.id,
-                callId,
+                callId: callIdRef.current,
             });
         });
     };
 
     const acceptInvite = () => {
-        socket.emit("accept-invite", { callId });
+        socket.emit("accept-invite", { callId: callIdRef.current });
     };
 
     function rejectCall() {
@@ -304,6 +312,9 @@ export const CallProvider = ({ children }) => {
         }
 
         setRemoteStreams({});
+        setParticipants([]);
+        setInvitedUsers([]);
+        setShowInviteModal(false);
 
         // 3. Close peer connection
         peers.current.forEach((pc) => {
@@ -319,10 +330,13 @@ export const CallProvider = ({ children }) => {
         // 5. Reset UI
         dispatch({ type: reason });
 
+        const endedCallId = callIdRef.current;
+        callIdRef.current = null;
+        setCallId(null);
+
         // 6. Notify other user
-        if (notify) {
-            // socket?.emit("leave-call", { to: state.peer.id, callId });
-            socket?.emit("leave-call", { callId });
+        if (notify && endedCallId) {
+            socket?.emit("leave-call", { callId: endedCallId });
         }
 
         // 7. Clear localStorage
@@ -332,7 +346,7 @@ export const CallProvider = ({ children }) => {
     // ---- socket handlers ----
 
     const handleIce = async ({ from, candidate, callId: incomingCallId }) => {
-        if (incomingCallId !== callId) return;
+        if (incomingCallId !== callIdRef.current) return;
 
         const pc = peers.current.get(from);
         if (!pc || !candidate) return;
@@ -349,12 +363,13 @@ export const CallProvider = ({ children }) => {
     };
 
     const handleIncoming = async ({ user, offer, type, callId: incomingCallId }) => {
-        if (state.status === CALL_STATE.CONNECTED) {
-            console.log(state)
+        if (stateRef.current.status === CALL_STATE.CONNECTED) {
+            console.log(stateRef.current)
             socket.emit("reject-call", { to: user.id });
             return
         }
 
+        callIdRef.current = incomingCallId;
         setCallId(incomingCallId);
         setParticipants(prev => [...new Set([...prev, user.id])]);
 
@@ -379,7 +394,7 @@ export const CallProvider = ({ children }) => {
                     socket.emit("ice-candidate", {
                         to: user.id,
                         candidate,
-                        callId
+                        callId: incomingCallId
                     });
                 }
             });
@@ -398,7 +413,7 @@ export const CallProvider = ({ children }) => {
         });
     };
     const handleAccepted = async ({ from, answer, callId: incomingCallId }) => {
-        if (incomingCallId !== callId) return;
+        if (incomingCallId !== callIdRef.current) return;
 
         const pc = peers.current.get(from);
         if (!pc) return;
@@ -440,7 +455,8 @@ export const CallProvider = ({ children }) => {
     };
 
     const handleRejected = async () => {
-        if (state.status === CALL_STATE.OUTGOING || state.status === CALL_STATE.CONNECTING) {
+        const s = stateRef.current.status;
+        if (s === CALL_STATE.OUTGOING || s === CALL_STATE.CONNECTING) {
             endCall("REJECTED", false);
         };
     }
@@ -492,7 +508,7 @@ export const CallProvider = ({ children }) => {
     }
 
     const handleReconnectOffer = async ({ from, offer, callId: reconnectingCallId }) => {
-        if (reconnectingCallId !== callId) return;
+        if (reconnectingCallId !== callIdRef.current) return;
 
         // Clean old peer if exists
         if (peers.current.has(from)) {
@@ -509,14 +525,14 @@ export const CallProvider = ({ children }) => {
                 socket.emit("ice-candidate", {
                     to: from,
                     candidate,
-                    callId
+                    callId: callIdRef.current
                 });
             }
         });
 
         peers.current.set(from, pc);
 
-        const stream = await getMedia(state.callType === "video");
+        const stream = await getMedia(stateRef.current.callType === "video");
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
         await pc.setRemoteDescription(offer);
@@ -537,12 +553,12 @@ export const CallProvider = ({ children }) => {
         socket.emit("reconnect-answer", {
             to: from,
             answer,
-            callId
+            callId: callIdRef.current
         });
     }
 
     const handleReconnectAnswer = async ({ from, answer, callId: reconnectingCallId }) => {
-        if (reconnectingCallId !== callId) return;
+        if (reconnectingCallId !== callIdRef.current) return;
 
         const pc = peers.current.get(from);
         if (!pc) return;
@@ -612,7 +628,7 @@ export const CallProvider = ({ children }) => {
     };
 
     function handleEndCall() {
-        dispatch({ type: "END" });
+        endCall("END", false);
     }
 
 
@@ -624,6 +640,7 @@ export const CallProvider = ({ children }) => {
 
         // You could show a modal or notification here
         // For now, we'll dispatch to show incoming call UI
+        callIdRef.current = incomingCallId;
         setCallId(incomingCallId);
         dispatch({
             type: "INCOMING",
@@ -635,7 +652,7 @@ export const CallProvider = ({ children }) => {
     };
 
     const handleParticipatJoin = async ({ userId, callId: incomingCallId }) => {
-        if (incomingCallId !== callId) return;
+        if (incomingCallId !== callIdRef.current) return;
 
         console.log("New participant joined:", userId);
 
@@ -656,7 +673,7 @@ export const CallProvider = ({ children }) => {
                 socket.emit("ice-candidate", {
                     to: userId,
                     candidate,
-                    callId
+                    callId: callIdRef.current
                 });
             }
         });
@@ -664,7 +681,7 @@ export const CallProvider = ({ children }) => {
         peers.current.set(userId, pc);
 
         // 2. get stream
-        const stream = await getMedia(state.callType === "video");
+        const stream = await getMedia(stateRef.current.callType === "video");
 
         stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
@@ -675,7 +692,7 @@ export const CallProvider = ({ children }) => {
         // 4. send offer to new user
         socket.emit("new-participant-offer", {
             to: userId,
-            callId,
+            callId: callIdRef.current,
             offer,
         });
     };
@@ -690,7 +707,7 @@ export const CallProvider = ({ children }) => {
     };
 
     const handleNewParticipantOffer = async ({ from, offer, callId: incomingCallId }) => {
-        if (incomingCallId !== callId) return;
+        if (incomingCallId !== callIdRef.current) return;
 
         console.log("Received offer from an existing participant:", from);
 
@@ -706,14 +723,14 @@ export const CallProvider = ({ children }) => {
                 socket.emit("ice-candidate", {
                     to: from,
                     candidate,
-                    callId
+                    callId: callIdRef.current
                 });
             }
         });
 
         peers.current.set(from, pc);
 
-        const stream = await getMedia(state.callType === "video");
+        const stream = await getMedia(stateRef.current.callType === "video");
 
         stream.getTracks().forEach(track => {
             const exists = pc.getSenders().some(s => s.track === track);
@@ -742,11 +759,11 @@ export const CallProvider = ({ children }) => {
         socket.emit("new-participant-answer", {
             to: from,
             answer,
-            callId
+            callId: callIdRef.current
         });
     };
     const handleNewParticipantAnswer = async ({ from, answer, callId: incomingCallId }) => {
-        if (incomingCallId !== callId) return;
+        if (incomingCallId !== callIdRef.current) return;
 
         const pc = peers.current.get(from);
         if (!pc) return;
@@ -819,7 +836,7 @@ export const CallProvider = ({ children }) => {
 
         };
 
-    }, [socket, state.status]);
+    }, [socket]);
 
     useEffect(() => {
         let timer;
@@ -878,6 +895,7 @@ export const CallProvider = ({ children }) => {
         if (!saved) return;
 
 
+        callIdRef.current = saved.callId;
         setCallId(saved.callId);
         setParticipants(saved.participants);
         console.log(saved.callId)

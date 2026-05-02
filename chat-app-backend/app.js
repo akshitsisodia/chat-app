@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const hpp = require("hpp");
 const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
 
 const authRoute = require("./routes/authRoute");
 const userRoute = require("./routes/userRoute");
@@ -35,12 +36,18 @@ app.use(
 );
 app.use(hpp());
 
+let limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  message: "Too many requests. Please try again after 15 minutes.",
+});
+if (process.env.NODE_ENV === "production") app.use(limiter);
+
 app.use(cookieParser());
 app.use(express.json());
 
-if (process.env.NODE_ENV !== "production") {
-  app.use(morgan("dev"));
-}
+if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
+
 
 // ! routes  routes  routes  routes routes routes routes routes routes routes routes  routes routes  routes  routes routes  routes  routes  routes
 
