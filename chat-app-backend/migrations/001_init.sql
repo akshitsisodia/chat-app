@@ -2,11 +2,11 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS group_keys (
-      chat_id      UUID NOT NULL,
-      user_id      UUID NOT NULL,
+      chat_id      UUID REFERENCES chats(id) ON DELETE CASCADE NOT NULL,
+      user_id      UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
       encrypted_key TEXT NOT NULL,
       key_version  INT NOT NULL DEFAULT 1,
-      created_at   TIMESTAMP DEFAULT NOW(),
+      created_at   TIMESTAMPTZ DEFAULT NOW(),
       nonce TEXT,
       ephemeral_public_key TEXT,
 
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS group_keys (
 
 -- users
  CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY,
+        id UUID PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
         is_verified BOOLEAN DEFAULT FALSE,
@@ -28,12 +28,12 @@ CREATE TABLE IF NOT EXISTS group_keys (
         iv TEXT,
         is_active BOOLEAN DEFAULT TRUE,
         login_attempts INTEGER DEFAULT 0 CHECK (login_attempts <= 5),
-        lockout_until TIMESTAMP,
+        lockout_until TIMESTAMPTZ,
         password_reset_token TEXT,
-        password_reset_token_expires TIMESTAMP,
-        password_changed_at TIMESTAMP,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+        password_reset_token_expires TIMESTAMPTZ,
+        password_changed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
     );
 
 -- otp
@@ -42,40 +42,65 @@ CREATE TABLE IF NOT EXISTS otp_codes
         id UUID PRIMARY KEY,
         email TEXT NOT NULL,
         otp TEXT NOT NULL,
-        expires_at TIMESTAMP NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        
         attempts INTEGER DEFAULT 0
+            CHECK (attempts <= 5)
     );
 
 -- chats
  CREATE TABLE IF NOT EXISTS chats (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
+
+        type TEXT DEFAULT 'private'
+          CHECK (type IN ('private', 'group')),
+
+        name TEXT,
+        photo TEXT,
+        created_by UUID REFERENCES users(id),
+        pair_key TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
       );
 
 -- chat_members
 CREATE TABLE IF NOT EXISTS chat_members (
-        chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        chat_id UUID REFERENCES chats(id) ON DELETE CASCADE NOT NULL,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+
+        role TEXT NOT NULL DEFAULT 'member'
+            CHECK (role IN ('admin', 'member')),
+
+        status TEXT NOT NULL DEFAULT 'active'
+            CHECK (status IN ('active', 'left', 'removed', 'banned')),
+
+        joined_at TIMESTAMPTZ DEFAULT NOW(),
+        left_at TIMESTAMPTZ,
+
         PRIMARY KEY (chat_id, user_id)
       );
 
 -- messages
  CREATE TABLE IF NOT EXISTS messages (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
-        sender_id UUID REFERENCES users(id),
+        chat_id UUID REFERENCES chats(id) ON DELETE CASCADE NOT NULL,
+        sender_id UUID REFERENCES users(id) NOT NULL,
         content TEXT,
         nonce TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        key_version INT NOT NULL,
+
+        message_type TEXT NOT NULL DEFAULT 'user'
+            CHECK (message_type IN ('user', 'system', 'call', 'file')),
+
+        created_at TIMESTAMPTZ DEFAULT NOW()
       );
 
 -- chat_unreads
  CREATE TABLE IF NOT EXISTS chat_unreads (
       chat_id UUID REFERENCES chats(id) ON DELETE CASCADE,
       user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-      unread_count INT DEFAULT 0,
+      unread_count INT DEFAULT 0 CHECK (unread_count >= 0),
       PRIMARY KEY (chat_id, user_id)
     ); 
 
@@ -93,11 +118,11 @@ CREATE TABLE IF NOT EXISTS message_seen (
     url TEXT NOT NULL,
     type TEXT,       
     name TEXT,
-    size INTEGER,
+    size BIGINT,
     encrypted_key TEXT,
     iv TEXT,
     file_nonce TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW()
   );             
 
 -- indexes

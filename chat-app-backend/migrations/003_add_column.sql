@@ -26,9 +26,11 @@
     --        ADD COLUMN joined_at TIMESTAMP DEFAULT NOW(),
     --        ADD COLUMN left_at TIMESTAMP;
 
-    --   ALTER TABLE chat_members
-    --       ADD CONSTRAINT chat_members_status_check
-    --       CHECK (status IN ('active', 'left', 'removed', 'banned')); 
 
     --   ALTER TABLE messages
-    --         ADD COLUMN message_type TEXT NOT NULL DEFAULT 'user'            
+    --         ADD COLUMN message_type TEXT NOT NULL DEFAULT 'user' 
+
+
+    --   ALTER TABLE chat_members
+    --       ADD CONSTRAINT chat_members_status_check
+    --       CHECK (status IN ('active', 'left', 'removed', 'banned'));            

@@ -9,8 +9,8 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-// const sql = fs.readFileSync("./migrations/001_init.sql", "utf-8");
-const sql = fs.readFileSync("./migrations/002_indexes.sql", "utf-8");
+const sql = fs.readFileSync("./migrations/001_init.sql", "utf-8");
+// const sql = fs.readFileSync("./migrations/002_indexes.sql", "utf-8");
 // const sql = fs.readFileSync("./migrations/003_add_column.sql", "utf-8");
 // const sql = fs.readFileSync("./migrations/005_delete.sql", "utf-8");
 
